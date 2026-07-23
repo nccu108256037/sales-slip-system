@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <meta
+    name="theme-color"
+    content="#0f766e"
+  />
+
+  <title>神隊友／好貨倉 銷貨單系統</title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  />
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="topbar-content">
+      <div>
+        <p class="eyebrow">
+          SALES SLIP SYSTEM
+        </p>
+
+        <h1>
+          神隊友／好貨倉 銷貨單系統
+        </h1>
+
+        <p class="subtitle">
+          手動輸入訂單內容，快速列印熱感應紙銷貨單
+        </p>
+      </div>
+
+      <div class="topbar-actions">
+        <button
+          id="newOrderBtn"
+          type="button"
+          class="button button-light"
+        >
+          清空建立新單
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-container">
+    <section class="main-card">
+
+      <!-- 標題 -->
+      <div class="section-heading">
+        <div>
+          <p class="section-label">
+            SALES SLIP
+          </p>
+
+          <h2>
+            建立銷貨單
+          </h2>
+        </div>
+
+        <span class="privacy-badge">
+          本頁不保存資料
+        </span>
+      </div>
+
+      <!-- 基本資料 -->
+      <div class="form-grid">
+
+        <label class="field">
+          <span class="field-label">
+            訂單來源
+          </span>
+
+          <select id="brand">
+            <option value="teammate">
+              神隊友
+            </option>
+
+            <option value="warehouse">
+              好貨倉
+            </option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field-label">
+            銷貨日期
+          </span>
+
+          <input
+            id="orderDate"
+            type="date"
+          />
+        </label>
+
+        <label class="field full-width">
+          <span class="field-label">
+            銷貨單號
+          </span>
+
+          <div class="inline-input">
+            <input
+              id="orderNumber"
+              type="text"
+              readonly
+            />
+
+            <button
+              id="regenerateNumberBtn"
+              type="button"
+              class="button button-outline"
+            >
+              重新產生
+            </button>
+          </div>
+
+          <small class="field-help">
+            神隊友使用代碼 0，好貨倉使用代碼 1，最後三碼為隨機編號。
+          </small>
+        </label>
+
+        <label class="field">
+          <span class="field-label">
+            店家名稱
+          </span>
+
+          <input
+            id="customerName"
+            type="text"
+            placeholder="直接輸入店家名稱"
+            autocomplete="off"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field-label">
+            聯絡電話
+          </span>
+
+          <input
+            id="customerPhone"
+            type="text"
+            placeholder="直接輸入聯絡電話"
+            autocomplete="off"
+          />
+        </label>
+
+        <label class="field full-width">
+          <span class="field-label">
+            店家地址
+          </span>
+
+          <input
+            id="customerAddress"
+            type="text"
+            placeholder="直接輸入店家地址"
+            autocomplete="off"
+          />
+        </label>
+
+      </div>
+
+      <!-- 品項 -->
+      <div class="items-heading">
+        <div>
+          <p class="section-label">
+            ITEMS
+          </p>
+
+          <h2>
+            品項明細
+          </h2>
+
+          <p>
+            每一項商品皆由你手動輸入。
+          </p>
+        </div>
+
+        <button
+          id="addItemBtn"
+          type="button"
+          class="button button-outline"
+        >
+          ＋ 新增品項
+        </button>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th class="index-column">
+                編號
+              </th>
+
+              <th>
+                品名
+              </th>
+
+              <th class="number-column">
+                數量
+              </th>
+
+              <th class="number-column">
+                單價
+              </th>
+
+              <th class="number-column">
+                金額
+              </th>
+
+              <th class="action-column">
+                操作
+              </th>
+            </tr>
+          </thead>
+
+          <tbody id="itemsBody"></tbody>
+        </table>
+      </div>
+
+      <button
+        id="addItemMobileBtn"
+        type="button"
+        class="button button-outline mobile-add-button"
+      >
+        ＋ 新增品項
+      </button>
+
+      <!-- 備註與金額 -->
+      <div class="bottom-grid">
+
+        <label class="field notes-field">
+          <span class="field-label">
+            訂單備註
+          </span>
+
+          <textarea
+            id="notes"
+            rows="7"
+            placeholder="例如：下午送達、缺貨請先聯絡、貨到付款"
+          ></textarea>
+        </label>
+
+        <div class="summary-card">
+
+          <div class="summary-row">
+            <span>
+              品項數
+            </span>
+
+            <strong id="itemCount">
+              0
+            </strong>
+          </div>
+
+          <div class="summary-row">
+            <span>
+              數量合計
+            </span>
+
+            <strong id="quantityTotal">
+              0
+            </strong>
+          </div>
+
+          <div class="summary-row total-row">
+            <span>
+              總計
+            </span>
+
+            <strong id="grandTotal">
+              $0
+            </strong>
+          </div>
+
+          <label class="field receivable-field">
+            <span class="field-label">
+              應收款
+            </span>
+
+            <input
+              id="receivable"
+              type="number"
+              min="0"
+              step="any"
+              inputmode="decimal"
+              placeholder="0"
+            />
+          </label>
+
+          <button
+            id="syncReceivableBtn"
+            type="button"
+            class="button button-outline full-button"
+          >
+            應收款同步總計
+          </button>
+
+        </div>
+      </div>
+
+      <!-- 列印 -->
+      <div class="print-section">
+        <div>
+          <p class="section-label">
+            PRINT
+          </p>
+
+          <h2>
+            熱感應紙列印
+          </h2>
+
+          <p>
+            請依照你的印表機紙張寬度選擇。
+          </p>
+        </div>
+
+        <div class="print-buttons">
+          <button
+            id="print58Btn"
+            type="button"
+            class="button button-dark"
+          >
+            列印 58mm
+          </button>
+
+          <button
+            id="print80Btn"
+            type="button"
+            class="button button-dark"
+          >
+            列印 80mm
+          </button>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- 列印內容 -->
+  <section
+    id="printArea"
+    class="print-area"
+    aria-hidden="true"
+  ></section>
+
+  <!-- 品項列範本 -->
+  <template id="itemRowTemplate">
+    <tr class="item-row">
+
+      <td class="item-index"></td>
+
+      <td>
+        <input
+          class="item-name"
+          type="text"
+          placeholder="輸入品名"
+          autocomplete="off"
+        />
+      </td>
+
+      <td>
+        <input
+          class="item-quantity"
+          type="number"
+          min="0"
+          step="any"
+          inputmode="decimal"
+          placeholder="0"
+        />
+      </td>
+
+      <td>
+        <input
+          class="item-price"
+          type="number"
+          min="0"
+          step="any"
+          inputmode="decimal"
+          placeholder="0"
+        />
+      </td>
+
+      <td>
+        <input
+          class="item-amount"
+          type="number"
+          min="0"
+          step="any"
+          inputmode="decimal"
+          placeholder="0"
+        />
+      </td>
+
+      <td>
+        <button
+          type="button"
+          class="delete-item-button"
+        >
+          刪除
+        </button>
+      </td>
+
+    </tr>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
