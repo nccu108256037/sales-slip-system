@@ -549,10 +549,18 @@ function printReceipt(width) {
     return;
   }
 
+  const isWarehouse =
+    elements.brand.value === "warehouse";
+
   const brandName =
-    elements.brand.value === "warehouse"
+    isWarehouse
       ? "好貨倉"
       : "神隊友";
+
+  const brandSlogan =
+    isWarehouse
+      ? "用最實惠的批發價來挺你"
+      : "餐飲老闆們的靠山";
 
   const customerName =
     elements.customerName.value.trim();
@@ -616,16 +624,20 @@ function printReceipt(width) {
     <div class="${receiptClass}">
 
       <div class="receipt-header">
-        <h1>
+        <h1 class="receipt-brand">
           ${escapeHtml(brandName)}
         </h1>
 
-        <p>
+        <p class="receipt-slogan">
+          ${escapeHtml(brandSlogan)}
+        </p>
+
+        <p class="receipt-title">
           銷貨單
         </p>
       </div>
 
-      <hr class="receipt-divider" />
+      <hr class="receipt-divider receipt-divider-strong" />
 
       <div class="receipt-info">
         <div>
@@ -721,12 +733,12 @@ function printReceipt(width) {
           </strong>
         </div>
 
-        <div class="receipt-summary-row receipt-total">
-          <span>
+        <div class="receipt-payable-box">
+          <span class="receipt-payable-label">
             應收款
           </span>
 
-          <strong>
+          <strong class="receipt-payable-value">
             ${formatCurrency(receivable)}
           </strong>
         </div>
@@ -738,10 +750,10 @@ function printReceipt(width) {
           ? `
             <hr class="receipt-divider" />
 
-            <div>
-              <strong>
+            <div class="receipt-notes-block">
+              <div class="receipt-notes-title">
                 備註：
-              </strong>
+              </div>
 
               <div class="receipt-notes">
                 ${escapeHtml(notes)}
@@ -754,7 +766,13 @@ function printReceipt(width) {
       <hr class="receipt-divider" />
 
       <div class="receipt-footer">
-        感謝您的訂購
+        <div>
+          感謝您的訂購！
+        </div>
+
+        <div>
+          祝您生意興隆！
+        </div>
       </div>
 
     </div>
