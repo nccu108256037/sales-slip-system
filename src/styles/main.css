@@ -649,3 +649,379 @@ button:disabled {
     box-shadow: none;
   }
 }
+
+/* =========================================================
+   ORDER DETAIL
+========================================================= */
+
+.order-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.order-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.detail-grid {
+  margin-top: 16px;
+
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+.detail-grid > div {
+  padding: 12px;
+
+  background: #f7faf9;
+
+  border-radius: 11px;
+}
+
+.detail-grid span {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: var(--muted);
+
+  font-size: 12px;
+}
+
+.detail-grid strong {
+  display: block;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   RECEIPT PREVIEW
+========================================================= */
+
+.receipt-width-switch {
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    1fr;
+
+  gap: 8px;
+
+  margin-bottom: 16px;
+}
+
+.receipt-width-button {
+  padding: 11px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 10px;
+
+  background: #fff;
+
+  color: var(--text);
+
+  font-weight: 900;
+}
+
+.receipt-width-button.active {
+  border-color:
+    var(--primary);
+
+  background:
+    var(--primary-soft);
+
+  color:
+    var(--primary-dark);
+}
+
+.receipt-preview-shell {
+  overflow-x: auto;
+
+  margin-bottom: 18px;
+
+  padding: 22px 10px;
+
+  border-radius: 14px;
+
+  background: #dfe4e3;
+}
+
+
+/* =========================================================
+   THERMAL RECEIPT
+========================================================= */
+
+.thermal-receipt {
+  margin: auto;
+
+  background: #fff;
+
+  color: #000;
+
+  font-family:
+    "Microsoft JhengHei",
+    Arial,
+    sans-serif;
+
+  box-shadow:
+    0 5px 22px
+    rgba(0, 0, 0, .14);
+}
+
+.receipt-58 {
+  width: 54mm;
+
+  padding: 2mm;
+
+  font-size: 10.5px;
+}
+
+.receipt-80 {
+  width: 76mm;
+
+  padding: 3mm;
+
+  font-size: 12px;
+}
+
+.receipt-brand {
+  text-align: center;
+
+  font-size: 30px;
+
+  line-height: 1.1;
+
+  font-weight: 900;
+}
+
+.receipt-58 .receipt-brand {
+  font-size: 24px;
+}
+
+.receipt-slogan {
+  margin-top: 3px;
+
+  text-align: center;
+
+  font-size: .92em;
+
+  font-weight: 700;
+}
+
+.receipt-title {
+  margin-top: 7px;
+
+  text-align: center;
+
+  font-size: 1.35em;
+
+  font-weight: 900;
+}
+
+.receipt-rule {
+  margin: 7px 0;
+
+  border-top:
+    1px dashed
+    #000;
+}
+
+.receipt-rule.strong {
+  border-top:
+    2px solid
+    #000;
+}
+
+.receipt-info {
+  display: grid;
+
+  gap: 3px;
+}
+
+.receipt-info > div {
+  display: grid;
+
+  grid-template-columns:
+    36px
+    1fr;
+
+  gap: 5px;
+}
+
+.receipt-info span {
+  white-space: nowrap;
+}
+
+.receipt-info strong {
+  overflow-wrap: anywhere;
+}
+
+.receipt-table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  table-layout: fixed;
+}
+
+.receipt-table th,
+.receipt-table td {
+  padding:
+    3px
+    1px;
+
+  text-align: right;
+
+  vertical-align: top;
+
+  word-break: break-word;
+}
+
+.receipt-table th {
+  border-bottom:
+    1px solid
+    #000;
+
+  font-weight: 900;
+}
+
+.receipt-table
+.receipt-product {
+  width: 42%;
+
+  text-align: left;
+}
+
+.receipt-58
+.receipt-table
+.receipt-product {
+  width: 39%;
+}
+
+.receipt-note {
+  font-size: 1.08em;
+
+  font-weight: 700;
+
+  line-height: 1.45;
+
+  overflow-wrap: anywhere;
+}
+
+.receipt-total {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: baseline;
+
+  gap: 8px;
+
+  padding: 4px 0;
+
+  font-size: 1.28em;
+
+  font-weight: 900;
+}
+
+.receipt-total strong {
+  font-size: 1.35em;
+}
+
+.receipt-footer {
+  padding-top: 5px;
+
+  text-align: center;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   PRINT CONTROL
+========================================================= */
+
+.print-warning {
+  margin-bottom: 12px;
+
+  padding: 13px;
+
+  border-radius: 11px;
+
+  background: #fff5df;
+
+  color: #805400;
+
+  font-size: 13px;
+}
+
+.print-warning strong {
+  display: block;
+
+  margin-bottom: 4px;
+}
+
+.print-locked-box {
+  display: grid;
+
+  gap: 5px;
+
+  padding: 14px;
+
+  border-radius: 11px;
+
+  background: #f1f3f3;
+
+  color: #596663;
+
+  font-size: 13px;
+}
+
+.print-reason-field {
+  margin-bottom: 12px;
+}
+
+.print-main-button {
+  min-height: 50px;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 650px) {
+
+  .detail-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .order-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .receipt-preview-shell {
+    padding:
+      18px
+      5px;
+  }
+
+}
