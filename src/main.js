@@ -3,12 +3,19 @@ import "./styles/main.css";
 
 const app = document.getElementById("app");
 
+/* =========================================================
+   GLOBAL STATE
+========================================================= */
+
 let currentUser = null;
 let currentProfile = null;
 let staff = [];
 
 let currentPage = "workbench";
 let itemCounter = 0;
+
+let selectedOrderId = null;
+let selectedReceiptWidth = 80;
 
 /* =========================================================
    INIT
@@ -35,6 +42,8 @@ function showLogin() {
   currentUser = null;
   currentProfile = null;
   staff = [];
+
+  selectedOrderId = null;
 
   app.innerHTML = `
     <main class="login-page">
@@ -121,12 +130,14 @@ async function login(event) {
   event.preventDefault();
 
   const email =
-    document.getElementById("email")
+    document
+      .getElementById("email")
       .value
       .trim();
 
   const password =
-    document.getElementById("password")
+    document
+      .getElementById("password")
       .value;
 
   const button =
@@ -149,7 +160,6 @@ async function login(event) {
   });
 
   if (error) {
-
     message.innerHTML = `
       <div class="message message-error">
         登入失敗，請確認帳號或密碼。
@@ -182,14 +192,17 @@ async function startApp(user) {
     .single();
 
   if (error || !profile) {
-
     app.innerHTML = `
       <main class="login-page">
+
         <section class="login-card">
+
           <div class="message message-error">
             找不到此帳號的 profiles 資料。
           </div>
+
         </section>
+
       </main>
     `;
 
@@ -197,16 +210,19 @@ async function startApp(user) {
   }
 
   if (!profile.is_active) {
-
     await supabase.auth.signOut();
 
     app.innerHTML = `
       <main class="login-page">
+
         <section class="login-card">
+
           <div class="message message-error">
             此帳號已停用。
           </div>
+
         </section>
+
       </main>
     `;
 
@@ -216,15 +232,22 @@ async function startApp(user) {
   currentUser = user;
   currentProfile = profile;
 
+  selectedReceiptWidth =
+    Number(profile.default_receipt_width) === 58
+      ? 58
+      : 80;
+
   await loadStaff();
 
   currentPage = "workbench";
+  selectedOrderId = null;
 
   await renderApp();
 }
 
 async function logout() {
   await supabase.auth.signOut();
+
   showLogin();
 }
 
@@ -244,16 +267,24 @@ async function loadStaff() {
       role,
       is_active
     `)
-    .eq("is_active", true)
     .order("display_name");
 
   if (error) {
     console.error(error);
+
     staff = [];
+
     return;
   }
 
   staff = data || [];
+}
+
+function activeStaff() {
+  return staff.filter(
+    person =>
+      person.is_active === true
+  );
 }
 
 function staffName(id) {
@@ -263,9 +294,11 @@ function staffName(id) {
 
   return (
     staff.find(
-      person => person.id === id
+      person =>
+        person.id === id
     )?.display_name
-    || "未知人員"
+    ||
+    "未知人員"
   );
 }
 
@@ -282,6 +315,7 @@ async function renderApp() {
         <div class="topbar-inner">
 
           <div>
+
             <div class="topbar-brand">
               神隊友 × 好貨倉
             </div>
@@ -292,10 +326,13 @@ async function renderApp() {
             >
               工作台
             </div>
+
           </div>
 
           <div class="user-chip">
-            ${escapeHtml(currentProfile.display_name)}
+            ${escapeHtml(
+              currentProfile.display_name
+            )}
           </div>
 
         </div>
@@ -362,11 +399,14 @@ function navButton(
   label,
   special = false
 ) {
+  const active =
+    currentPage === page;
+
   return `
     <button
       class="
         nav-button
-        ${currentPage === page ? "active" : ""}
+        ${active ? "active" : ""}
         ${special ? "new-order" : ""}
       "
       data-page="${page}"
@@ -394,6 +434,8 @@ function bindNavigation() {
         "click",
         async () => {
 
+          selectedOrderId = null;
+
           currentPage =
             button.dataset.page;
 
@@ -416,6 +458,11 @@ async function renderCurrentPage() {
     case "today-orders":
       setPageTitle("今日訂單");
       await renderTodayOrders();
+      break;
+
+    case "order-detail":
+      setPageTitle("訂單詳情");
+      await renderOrderDetail();
       break;
 
     case "deliveries":
@@ -482,6 +529,7 @@ async function renderWorkbench() {
     .eq("status", "active");
 
   if (error) {
+    console.error(error);
 
     content.innerHTML = `
       <div class="message message-error">
@@ -492,7 +540,8 @@ async function renderWorkbench() {
     return;
   }
 
-  const orders = data || [];
+  const orders =
+    data || [];
 
   const myOrders =
     orders.filter(
@@ -505,10 +554,10 @@ async function renderWorkbench() {
     orders.filter(
       order =>
         order.delivery_person_id
-        === currentUser.id
+          === currentUser.id
         &&
         order.delivery_status
-        !== "completed"
+          !== "completed"
     ).length;
 
   const unassigned =
@@ -517,20 +566,23 @@ async function renderWorkbench() {
         !order.delivery_person_id
         &&
         order.delivery_status
-        !== "completed"
+          !== "completed"
     ).length;
 
   const enteredByMe =
     orders.filter(
       order =>
         order.entered_by
-        === currentUser.id
+          === currentUser.id
     ).length;
 
   const total =
     orders.reduce(
       (sum, order) =>
-        sum + Number(order.receivable || 0),
+        sum +
+        Number(
+          order.receivable || 0
+        ),
       0
     );
 
@@ -538,6 +590,7 @@ async function renderWorkbench() {
     isManager()
       ? `
         <div class="stat-card">
+
           <div class="stat-label">
             今日接單金額
           </div>
@@ -545,6 +598,7 @@ async function renderWorkbench() {
           <div class="stat-number money">
             ${money(total)}
           </div>
+
         </div>
       `
       : "";
@@ -568,6 +622,7 @@ async function renderWorkbench() {
     <div class="stats-grid">
 
       <div class="stat-card">
+
         <div class="stat-label">
           我的接單
         </div>
@@ -575,9 +630,11 @@ async function renderWorkbench() {
         <div class="stat-number">
           ${myOrders}
         </div>
+
       </div>
 
       <div class="stat-card">
+
         <div class="stat-label">
           我的待配送
         </div>
@@ -585,9 +642,11 @@ async function renderWorkbench() {
         <div class="stat-number">
           ${myDeliveries}
         </div>
+
       </div>
 
       <div class="stat-card">
+
         <div class="stat-label">
           未分配配送
         </div>
@@ -595,9 +654,11 @@ async function renderWorkbench() {
         <div class="stat-number">
           ${unassigned}
         </div>
+
       </div>
 
       <div class="stat-card">
+
         <div class="stat-label">
           我今日登單
         </div>
@@ -605,6 +666,7 @@ async function renderWorkbench() {
         <div class="stat-number">
           ${enteredByMe}
         </div>
+
       </div>
 
       ${managerStats}
@@ -629,12 +691,15 @@ async function renderWorkbench() {
   `;
 
   document
-    .getElementById("quickNewOrder")
+    .getElementById(
+      "quickNewOrder"
+    )
     .addEventListener(
       "click",
       async () => {
 
-        currentPage = "new-order";
+        currentPage =
+          "new-order";
 
         await renderApp();
 
@@ -654,7 +719,8 @@ function renderNewOrder() {
       "pageContent"
     );
 
-  const today = taiwanToday();
+  const today =
+    taiwanToday();
 
   content.innerHTML = `
     <div class="page-title">
@@ -937,21 +1003,27 @@ function renderNewOrder() {
   addItemRow();
 
   document
-    .getElementById("addItemButton")
+    .getElementById(
+      "addItemButton"
+    )
     .addEventListener(
       "click",
       addItemRow
     );
 
   document
-    .getElementById("deliverySlot")
+    .getElementById(
+      "deliverySlot"
+    )
     .addEventListener(
       "change",
       toggleDeliveryTime
     );
 
   document
-    .getElementById("newOrderForm")
+    .getElementById(
+      "newOrderForm"
+    )
     .addEventListener(
       "submit",
       submitOrder
@@ -960,9 +1032,8 @@ function renderNewOrder() {
 
 function renderAssignmentFields() {
   if (isManager()) {
-
     const options =
-      staff
+      activeStaff()
         .map(person => `
           <option value="${person.id}">
             ${escapeHtml(
@@ -1057,9 +1128,12 @@ function addItemRow() {
     );
 
   const card =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
-  card.className = "item-card";
+  card.className =
+    "item-card";
 
   card.dataset.itemId =
     String(itemCounter);
@@ -1134,7 +1208,6 @@ function addItemRow() {
           type="number"
           min="0"
           step="0.01"
-          value=""
           placeholder="0"
           required
         >
@@ -1144,31 +1217,40 @@ function addItemRow() {
     </div>
 
     <div class="item-amount">
+
       金額：
+
       <span class="item-total">
         $0
       </span>
+
     </div>
   `;
 
   container.appendChild(card);
 
   card
-    .querySelector(".item-qty")
+    .querySelector(
+      ".item-qty"
+    )
     .addEventListener(
       "input",
       calculateTotals
     );
 
   card
-    .querySelector(".item-price")
+    .querySelector(
+      ".item-price"
+    )
     .addEventListener(
       "input",
       calculateTotals
     );
 
   card
-    .querySelector(".remove-item")
+    .querySelector(
+      ".remove-item"
+    )
     .addEventListener(
       "click",
       () => {
@@ -1178,7 +1260,9 @@ function addItemRow() {
             ".item-card"
           );
 
-        if (allItems.length <= 1) {
+        if (
+          allItems.length <= 1
+        ) {
           return;
         }
 
@@ -1197,12 +1281,16 @@ function addItemRow() {
 
 function renumberItems() {
   document
-    .querySelectorAll(".item-card")
+    .querySelectorAll(
+      ".item-card"
+    )
     .forEach(
       (card, index) => {
 
         card
-          .querySelector(".item-number")
+          .querySelector(
+            ".item-number"
+          )
           .textContent =
             `品項 ${index + 1}`;
 
@@ -1215,45 +1303,62 @@ function calculateTotals() {
   let quantityTotal = 0;
 
   document
-    .querySelectorAll(".item-card")
+    .querySelectorAll(
+      ".item-card"
+    )
     .forEach(card => {
 
       const quantity =
         Number(
-          card.querySelector(
-            ".item-qty"
-          ).value
+          card
+            .querySelector(
+              ".item-qty"
+            )
+            .value
         ) || 0;
 
       const price =
         Number(
-          card.querySelector(
-            ".item-price"
-          ).value
+          card
+            .querySelector(
+              ".item-price"
+            )
+            .value
         ) || 0;
 
       const amount =
         quantity * price;
 
-      quantityTotal += quantity;
-      total += amount;
+      quantityTotal +=
+        quantity;
+
+      total +=
+        amount;
 
       card
-        .querySelector(".item-total")
+        .querySelector(
+          ".item-total"
+        )
         .textContent =
           money(amount);
 
     });
 
   document
-    .getElementById("orderTotal")
+    .getElementById(
+      "orderTotal"
+    )
     .textContent =
       money(total);
 
   document
-    .getElementById("totalQuantity")
+    .getElementById(
+      "totalQuantity"
+    )
     .textContent =
-      `${formatNumber(quantityTotal)} 件`;
+      `${formatNumber(
+        quantityTotal
+      )} 件`;
 }
 
 function toggleDeliveryTime() {
@@ -1272,17 +1377,17 @@ function toggleDeliveryTime() {
       "deliveryTime"
     );
 
-  if (slot === "specific") {
-
+  if (
+    slot === "specific"
+  ) {
     field.style.display = "";
     input.required = true;
-
   } else {
+    field.style.display =
+      "none";
 
-    field.style.display = "none";
     input.required = false;
     input.value = "";
-
   }
 }
 
@@ -1302,9 +1407,11 @@ async function submitOrder(event) {
   message.innerHTML = "";
 
   const items =
-    [...document.querySelectorAll(
-      ".item-card"
-    )]
+    [
+      ...document.querySelectorAll(
+        ".item-card"
+      )
+    ]
       .map(card => ({
         item_name:
           card
@@ -1345,9 +1452,10 @@ async function submitOrder(event) {
         Number.isNaN(
           item.unit_price
         )
+        ||
+        item.unit_price < 0
     )
   ) {
-
     message.innerHTML = `
       <div class="message message-error">
         請檢查所有商品的品名、數量與單價。
@@ -1357,23 +1465,31 @@ async function submitOrder(event) {
     return;
   }
 
-  let orderTakerId = null;
-  let deliveryPersonId = null;
+  let orderTakerId =
+    null;
+
+  let deliveryPersonId =
+    null;
 
   if (isManager()) {
-
     orderTakerId =
-      document.getElementById(
-        "orderTaker"
-      ).value || null;
+      document
+        .getElementById(
+          "orderTaker"
+        )
+        .value
+      ||
+      null;
 
     deliveryPersonId =
-      document.getElementById(
-        "deliveryPerson"
-      ).value || null;
-
+      document
+        .getElementById(
+          "deliveryPerson"
+        )
+        .value
+      ||
+      null;
   } else {
-
     if (
       document.getElementById(
         "selfOrderTaker"
@@ -1391,7 +1507,6 @@ async function submitOrder(event) {
       deliveryPersonId =
         currentUser.id;
     }
-
   }
 
   const deliverySlot =
@@ -1402,14 +1517,17 @@ async function submitOrder(event) {
   const deliveryTime =
     deliverySlot === "specific"
       ? (
-          document.getElementById(
-            "deliveryTime"
-          ).value || null
+          document
+            .getElementById(
+              "deliveryTime"
+            )
+            .value
+          ||
+          null
         )
       : null;
 
   const payload = {
-
     p_brand:
       document.getElementById(
         "brand"
@@ -1421,29 +1539,52 @@ async function submitOrder(event) {
       ).value,
 
     p_customer_name:
-      document.getElementById(
-        "customerName"
-      ).value.trim(),
+      document
+        .getElementById(
+          "customerName"
+        )
+        .value
+        .trim(),
 
     p_customer_phone:
-      document.getElementById(
-        "customerPhone"
-      ).value.trim() || null,
+      document
+        .getElementById(
+          "customerPhone"
+        )
+        .value
+        .trim()
+      ||
+      null,
 
     p_customer_address:
-      document.getElementById(
-        "customerAddress"
-      ).value.trim() || null,
+      document
+        .getElementById(
+          "customerAddress"
+        )
+        .value
+        .trim()
+      ||
+      null,
 
     p_receipt_note:
-      document.getElementById(
-        "receiptNote"
-      ).value.trim() || null,
+      document
+        .getElementById(
+          "receiptNote"
+        )
+        .value
+        .trim()
+      ||
+      null,
 
     p_internal_delivery_note:
-      document.getElementById(
-        "internalNote"
-      ).value.trim() || null,
+      document
+        .getElementById(
+          "internalNote"
+        )
+        .value
+        .trim()
+      ||
+      null,
 
     p_scheduled_delivery_date:
       document.getElementById(
@@ -1467,7 +1608,8 @@ async function submitOrder(event) {
   };
 
   button.disabled = true;
-  button.textContent = "儲存中...";
+  button.textContent =
+    "儲存中...";
 
   const {
     data,
@@ -1478,18 +1620,23 @@ async function submitOrder(event) {
   );
 
   if (error) {
-
     console.error(error);
 
     message.innerHTML = `
       <div class="message message-error">
+
         建立訂單失敗：
-        ${escapeHtml(error.message)}
+
+        ${escapeHtml(
+          error.message
+        )}
+
       </div>
     `;
 
     button.disabled = false;
-    button.textContent = "儲存訂單";
+    button.textContent =
+      "儲存訂單";
 
     window.scrollTo({
       top: 0,
@@ -1512,19 +1659,24 @@ async function submitOrder(event) {
       <br>
 
       單號：
+
       <strong>
         ${escapeHtml(
           result?.new_order_number
-          || ""
+          ||
+          ""
         )}
       </strong>
 
       <br>
 
       金額：
+
       <strong>
         ${money(
-          result?.new_total || 0
+          result?.new_total
+          ||
+          0
         )}
       </strong>
 
@@ -1532,7 +1684,8 @@ async function submitOrder(event) {
   `;
 
   button.disabled = false;
-  button.textContent = "儲存訂單";
+  button.textContent =
+    "儲存訂單";
 
   window.scrollTo({
     top: 0,
@@ -1548,7 +1701,7 @@ async function submitOrder(event) {
       await renderApp();
 
     },
-    1300
+    1000
   );
 }
 
@@ -1584,9 +1737,13 @@ async function renderTodayOrders() {
       delivery_person_id,
       delivery_status,
       scheduled_delivery_date,
+      scheduled_delivery_time,
       delivery_slot,
       created_at,
-      status
+      status,
+      first_issued_at,
+      first_issued_by,
+      receipt_revision
     `)
     .eq(
       "business_date",
@@ -1600,6 +1757,7 @@ async function renderTodayOrders() {
     );
 
   if (error) {
+    console.error(error);
 
     content.innerHTML = `
       <div class="message message-error">
@@ -1614,7 +1772,8 @@ async function renderTodayOrders() {
     (data || [])
       .filter(
         order =>
-          order.status !== "voided"
+          order.status
+          !== "voided"
       );
 
   content.innerHTML = `
@@ -1633,7 +1792,9 @@ async function renderTodayOrders() {
     ${
       orders.length
         ? orders
-            .map(renderOrderCard)
+            .map(
+              renderOrderCard
+            )
             .join("")
         : `
           <div class="card empty">
@@ -1642,9 +1803,31 @@ async function renderTodayOrders() {
         `
     }
   `;
+
+  bindTodayOrderButtons();
 }
 
 function renderOrderCard(order) {
+  const printStatus =
+    order.first_issued_at
+      ? `
+        <span class="status status-completed">
+          已出單
+        </span>
+      `
+      : `
+        <span class="status status-pending">
+          未出單
+        </span>
+      `;
+
+  const employeePrintLocked =
+    Boolean(
+      order.first_issued_at
+    )
+    &&
+    !isManager();
+
   return `
     <article class="order-card">
 
@@ -1667,7 +1850,9 @@ function renderOrderCard(order) {
         </div>
 
         <div class="order-price">
-          ${money(order.receivable)}
+          ${money(
+            order.receivable
+          )}
         </div>
 
       </div>
@@ -1677,7 +1862,8 @@ function renderOrderCard(order) {
         <div>
           品牌：
           ${
-            order.brand === "teammate"
+            order.brand
+              === "teammate"
               ? "神隊友"
               : "好貨倉"
           }
@@ -1712,22 +1898,1461 @@ function renderOrderCard(order) {
 
         <div>
           預計：
-          ${
-            escapeHtml(
-              deliveryDateLabel(order)
+          ${escapeHtml(
+            deliveryDateLabel(
+              order
             )
-          }
+          )}
         </div>
 
-        <div>
+        <div class="status-row">
+
           ${deliveryStatusBadge(
             order.delivery_status
+          )}
+
+          ${printStatus}
+
+        </div>
+
+      </div>
+
+      <div class="order-actions">
+
+        <button
+          type="button"
+          class="
+            btn
+            btn-secondary
+            view-order-button
+          "
+          data-order-id="${order.id}"
+        >
+          查看訂單
+        </button>
+
+        <button
+          type="button"
+          class="
+            btn
+            ${
+              employeePrintLocked
+                ? "btn-secondary"
+                : "btn-primary"
+            }
+            print-order-button
+          "
+          data-order-id="${order.id}"
+          ${
+            employeePrintLocked
+              ? "disabled"
+              : ""
+          }
+        >
+          ${
+            order.first_issued_at
+              ? (
+                  isManager()
+                    ? "再次出單"
+                    : "已出單"
+                )
+              : "出單收據"
+          }
+        </button>
+
+      </div>
+
+    </article>
+  `;
+}
+
+function bindTodayOrderButtons() {
+  document
+    .querySelectorAll(
+      ".view-order-button"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        async () => {
+
+          selectedOrderId =
+            button.dataset.orderId;
+
+          currentPage =
+            "order-detail";
+
+          await renderApp();
+
+        }
+      );
+
+    });
+
+  document
+    .querySelectorAll(
+      ".print-order-button:not(:disabled)"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        async () => {
+
+          selectedOrderId =
+            button.dataset.orderId;
+
+          currentPage =
+            "order-detail";
+
+          await renderApp();
+
+        }
+      );
+
+    });
+}
+
+/* =========================================================
+   ORDER DETAIL
+========================================================= */
+
+async function renderOrderDetail() {
+  const content =
+    document.getElementById(
+      "pageContent"
+    );
+
+  if (!selectedOrderId) {
+    currentPage =
+      "today-orders";
+
+    await renderApp();
+
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="empty">
+      讀取訂單資料...
+    </div>
+  `;
+
+  const {
+    data: order,
+    error: orderError
+  } = await supabase
+    .from("orders")
+    .select(`
+      id,
+      order_number,
+      brand,
+      business_date,
+      customer_name,
+      customer_phone,
+      customer_address,
+      subtotal,
+      receivable,
+      receipt_note,
+      internal_delivery_note,
+      entered_by,
+      order_taker_id,
+      delivery_person_id,
+      scheduled_delivery_date,
+      delivery_slot,
+      scheduled_delivery_time,
+      delivery_status,
+      receipt_revision,
+      first_issued_at,
+      first_issued_by,
+      status,
+      created_at
+    `)
+    .eq(
+      "id",
+      selectedOrderId
+    )
+    .single();
+
+  if (
+    orderError
+    ||
+    !order
+  ) {
+    console.error(
+      orderError
+    );
+
+    content.innerHTML = `
+      <div class="message message-error">
+        找不到這張訂單。
+      </div>
+    `;
+
+    return;
+  }
+
+  const {
+    data: items,
+    error: itemError
+  } = await supabase
+    .from("order_items")
+    .select(`
+      id,
+      item_index,
+      item_name,
+      quantity,
+      unit_price,
+      amount
+    `)
+    .eq(
+      "order_id",
+      selectedOrderId
+    )
+    .order(
+      "item_index",
+      {
+        ascending: true
+      }
+    );
+
+  if (itemError) {
+    console.error(
+      itemError
+    );
+
+    content.innerHTML = `
+      <div class="message message-error">
+        訂單品項讀取失敗。
+      </div>
+    `;
+
+    return;
+  }
+
+  const receiptStatus =
+    order.first_issued_at
+      ? `
+        <span class="status status-completed">
+          已出單
+        </span>
+      `
+      : `
+        <span class="status status-pending">
+          未出單
+        </span>
+      `;
+
+  content.innerHTML = `
+    <div class="page-title">
+
+      <h1>
+        ${escapeHtml(
+          order.customer_name
+        )}
+      </h1>
+
+      <p>
+        單號：
+        ${escapeHtml(
+          order.order_number
+        )}
+      </p>
+
+    </div>
+
+    <section class="card">
+
+      <div class="order-detail-head">
+
+        <div>
+          ${receiptStatus}
+        </div>
+
+        <div class="order-price">
+          ${money(
+            order.receivable
           )}
         </div>
 
       </div>
 
-    </article>
+      <div class="detail-grid">
+
+        <div>
+
+          <span>
+            品牌
+          </span>
+
+          <strong>
+            ${
+              order.brand
+                === "teammate"
+                ? "神隊友"
+                : "好貨倉"
+            }
+          </strong>
+
+        </div>
+
+        <div>
+
+          <span>
+            訂單日期
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              order.business_date
+            )}
+          </strong>
+
+        </div>
+
+        <div>
+
+          <span>
+            登單人員
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              staffName(
+                order.entered_by
+              )
+            )}
+          </strong>
+
+        </div>
+
+        <div>
+
+          <span>
+            接單人員
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              staffName(
+                order.order_taker_id
+              )
+            )}
+          </strong>
+
+        </div>
+
+        <div>
+
+          <span>
+            配送人員
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              staffName(
+                order.delivery_person_id
+              )
+            )}
+          </strong>
+
+        </div>
+
+        <div>
+
+          <span>
+            配送時間
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              deliveryDateLabel(
+                order
+              )
+            )}
+          </strong>
+
+        </div>
+
+      </div>
+
+      ${
+        order.first_issued_at
+          ? `
+            <div class="issue-info">
+
+              已由
+              <strong>
+                ${escapeHtml(
+                  staffName(
+                    order.first_issued_by
+                  )
+                )}
+              </strong>
+              出單
+
+              <br>
+
+              ${formatDateTime(
+                order.first_issued_at
+              )}
+
+            </div>
+          `
+          : ""
+      }
+
+    </section>
+
+    <section class="card">
+
+      <div class="card-title">
+        電子銷貨單預覽
+      </div>
+
+      <div class="receipt-width-switch">
+
+        <button
+          type="button"
+          class="
+            receipt-width-button
+            ${
+              selectedReceiptWidth
+                === 58
+                ? "active"
+                : ""
+            }
+          "
+          data-width="58"
+        >
+          58mm
+        </button>
+
+        <button
+          type="button"
+          class="
+            receipt-width-button
+            ${
+              selectedReceiptWidth
+                === 80
+                ? "active"
+                : ""
+            }
+          "
+          data-width="80"
+        >
+          80mm
+        </button>
+
+      </div>
+
+      <div class="receipt-preview-shell">
+
+        ${buildReceiptMarkup(
+          order,
+          items || [],
+          selectedReceiptWidth
+        )}
+
+      </div>
+
+      ${buildPrintControls(
+        order
+      )}
+
+    </section>
+
+    <button
+      type="button"
+      id="backToOrders"
+      class="
+        btn
+        btn-secondary
+        btn-block
+      "
+    >
+      ← 返回今日訂單
+    </button>
+  `;
+
+  document
+    .querySelectorAll(
+      ".receipt-width-button"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        async () => {
+
+          selectedReceiptWidth =
+            Number(
+              button.dataset.width
+            );
+
+          await renderOrderDetail();
+
+        }
+      );
+
+    });
+
+  const printButton =
+    document.getElementById(
+      "confirmPrintButton"
+    );
+
+  if (printButton) {
+    printButton.addEventListener(
+      "click",
+      async () => {
+
+        await printReceipt(
+          order,
+          items || []
+        );
+
+      }
+    );
+  }
+
+  document
+    .getElementById(
+      "backToOrders"
+    )
+    .addEventListener(
+      "click",
+      async () => {
+
+        selectedOrderId =
+          null;
+
+        currentPage =
+          "today-orders";
+
+        await renderApp();
+
+      }
+    );
+}
+
+/* =========================================================
+   PRINT CONTROLS
+========================================================= */
+
+function buildPrintControls(order) {
+  if (
+    order.first_issued_at
+    &&
+    !isManager()
+  ) {
+    return `
+      <div class="print-locked-box">
+
+        <strong>
+          此訂單已出單
+        </strong>
+
+        <div>
+          出單人：
+          ${escapeHtml(
+            staffName(
+              order.first_issued_by
+            )
+          )}
+        </div>
+
+        <div>
+          一般員工無法再次出單。
+        </div>
+
+      </div>
+    `;
+  }
+
+  const reprint =
+    Boolean(
+      order.first_issued_at
+    );
+
+  return `
+    ${
+      reprint
+        ? `
+          <label class="
+            field
+            print-reason-field
+          ">
+
+            <span class="field-label">
+              再次出單原因 *
+            </span>
+
+            <select id="reprintReason">
+
+              <option value="">
+                請選擇原因
+              </option>
+
+              <option value="印表機卡紙">
+                印表機卡紙
+              </option>
+
+              <option value="印字不清楚">
+                印字不清楚
+              </option>
+
+              <option value="客戶要求補單">
+                客戶要求補單
+              </option>
+
+              <option value="訂單修改後重印">
+                訂單修改後重印
+              </option>
+
+              <option value="其他">
+                其他
+              </option>
+
+            </select>
+
+          </label>
+        `
+        : `
+          <div class="print-warning">
+
+            <strong>
+              首次出單請先確認
+            </strong>
+
+            <div>
+              印表機已連線、紙張已裝好，
+              並確認目前使用
+              ${selectedReceiptWidth}mm。
+            </div>
+
+            ${
+              !isManager()
+                ? `
+                  <div style="margin-top:6px;">
+                    一般員工每張訂單只有一次出單機會。
+                  </div>
+                `
+                : ""
+            }
+
+          </div>
+        `
+    }
+
+    <button
+      id="confirmPrintButton"
+      type="button"
+      class="
+        btn
+        btn-primary
+        btn-block
+        print-main-button
+      "
+    >
+      ${
+        reprint
+          ? "確認再次出單"
+          : "確認並出單"
+      }
+      ・
+      ${selectedReceiptWidth}mm
+    </button>
+  `;
+}
+
+/* =========================================================
+   AUTHORIZE + PRINT
+========================================================= */
+
+async function printReceipt(
+  order,
+  items
+) {
+  let reason =
+    null;
+
+  if (
+    order.first_issued_at
+  ) {
+    const reasonSelect =
+      document.getElementById(
+        "reprintReason"
+      );
+
+    reason =
+      reasonSelect?.value
+      ||
+      null;
+
+    if (!reason) {
+      alert(
+        "請先選擇再次出單原因。"
+      );
+
+      return;
+    }
+  }
+
+  const confirmed =
+    window.confirm(
+      order.first_issued_at
+        ? `確認再次出單？\n紙寬：${selectedReceiptWidth}mm`
+        : `確認正式出單？\n紙寬：${selectedReceiptWidth}mm\n\n確認後系統會記錄為已出單。`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  /*
+    必須先同步開新視窗，
+    避免 iPhone / Safari
+    因為 RPC await 而阻擋 popup。
+  */
+  const printWindow =
+    window.open(
+      "",
+      "_blank"
+    );
+
+  if (!printWindow) {
+    alert(
+      "瀏覽器阻擋了列印視窗，請允許此網站開啟彈出視窗。"
+    );
+
+    return;
+  }
+
+  printWindow.document.open();
+
+  printWindow.document.write(`
+    <!doctype html>
+
+    <html lang="zh-Hant-TW">
+
+      <head>
+        <meta charset="UTF-8">
+        <title>準備出單</title>
+      </head>
+
+      <body style="
+        margin:0;
+        padding:30px;
+        font-family:
+          Arial,
+          'Microsoft JhengHei',
+          sans-serif;
+      ">
+
+        正在確認出單權限...
+
+      </body>
+
+    </html>
+  `);
+
+  printWindow.document.close();
+
+  const {
+    error
+  } = await supabase.rpc(
+    "authorize_receipt_print",
+    {
+      p_order_id:
+        order.id,
+
+      p_width:
+        selectedReceiptWidth,
+
+      p_reason:
+        reason
+    }
+  );
+
+  if (error) {
+    console.error(
+      error
+    );
+
+    printWindow.close();
+
+    alert(
+      `出單失敗：${error.message}`
+    );
+
+    await renderOrderDetail();
+
+    return;
+  }
+
+  const printHtml =
+    buildPrintableDocument(
+      order,
+      items,
+      selectedReceiptWidth
+    );
+
+  printWindow.document.open();
+
+  printWindow.document.write(
+    printHtml
+  );
+
+  printWindow.document.close();
+
+  setTimeout(
+    () => {
+
+      try {
+        printWindow.focus();
+        printWindow.print();
+      } catch (error) {
+        console.error(
+          error
+        );
+      }
+
+    },
+    500
+  );
+
+  setTimeout(
+    async () => {
+
+      await renderOrderDetail();
+
+    },
+    900
+  );
+}
+
+/* =========================================================
+   RECEIPT
+========================================================= */
+
+function buildReceiptMarkup(
+  order,
+  items,
+  width
+) {
+  const brandName =
+    order.brand === "teammate"
+      ? "神隊友"
+      : "好貨倉";
+
+  const slogan =
+    order.brand === "teammate"
+      ? "餐飲老闆們的靠山"
+      : "用最實惠的批發價來挺你";
+
+  const totalQuantity =
+    items.reduce(
+      (sum, item) =>
+        sum +
+        Number(
+          item.quantity || 0
+        ),
+      0
+    );
+
+  return `
+    <div
+      class="
+        thermal-receipt
+        receipt-${width}
+      "
+    >
+
+      <div class="receipt-brand">
+        ${escapeHtml(
+          brandName
+        )}
+      </div>
+
+      <div class="receipt-slogan">
+        ${escapeHtml(
+          slogan
+        )}
+      </div>
+
+      <div class="receipt-title">
+        銷貨單
+      </div>
+
+      <div class="receipt-rule"></div>
+
+      <div class="receipt-info">
+
+        <div>
+
+          <span>
+            單號
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              order.order_number
+            )}
+          </strong>
+
+        </div>
+
+        <div>
+
+          <span>
+            日期
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              order.business_date
+            )}
+          </strong>
+
+        </div>
+
+        <div>
+
+          <span>
+            店家
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              order.customer_name
+            )}
+          </strong>
+
+        </div>
+
+        ${
+          order.customer_phone
+            ? `
+              <div>
+
+                <span>
+                  電話
+                </span>
+
+                <strong>
+                  ${escapeHtml(
+                    order.customer_phone
+                  )}
+                </strong>
+
+              </div>
+            `
+            : ""
+        }
+
+        ${
+          order.customer_address
+            ? `
+              <div>
+
+                <span>
+                  地址
+                </span>
+
+                <strong>
+                  ${escapeHtml(
+                    order.customer_address
+                  )}
+                </strong>
+
+              </div>
+            `
+            : ""
+        }
+
+      </div>
+
+      <div class="receipt-rule"></div>
+
+      <table class="receipt-table">
+
+        <thead>
+
+          <tr>
+
+            <th class="receipt-product">
+              品名
+            </th>
+
+            <th>
+              數量
+            </th>
+
+            <th>
+              單價
+            </th>
+
+            <th>
+              金額
+            </th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          ${
+            items.map(
+              item => `
+                <tr>
+
+                  <td class="receipt-product">
+                    ${escapeHtml(
+                      item.item_name
+                    )}
+                  </td>
+
+                  <td>
+                    ${formatNumber(
+                      Number(
+                        item.quantity
+                      )
+                    )}
+                  </td>
+
+                  <td>
+                    ${formatPlainMoney(
+                      item.unit_price
+                    )}
+                  </td>
+
+                  <td>
+                    ${formatPlainMoney(
+                      item.amount
+                    )}
+                  </td>
+
+                </tr>
+              `
+            ).join("")
+          }
+
+        </tbody>
+
+      </table>
+
+      <div class="receipt-rule"></div>
+
+      <div class="receipt-summary">
+
+        <div>
+
+          <span>
+            品項數
+          </span>
+
+          <strong>
+            ${items.length}
+          </strong>
+
+        </div>
+
+        <div>
+
+          <span>
+            數量
+          </span>
+
+          <strong>
+            ${formatNumber(
+              totalQuantity
+            )}
+          </strong>
+
+        </div>
+
+        <div>
+
+          <span>
+            總計
+          </span>
+
+          <strong>
+            ${formatPlainMoney(
+              order.subtotal
+            )}
+          </strong>
+
+        </div>
+
+      </div>
+
+      ${
+        order.receipt_note
+          ? `
+            <div class="receipt-rule"></div>
+
+            <div class="receipt-note">
+
+              <strong>
+                備註：
+              </strong>
+
+              ${escapeHtml(
+                order.receipt_note
+              )}
+
+            </div>
+          `
+          : ""
+      }
+
+      <div class="receipt-rule strong"></div>
+
+      <div class="receipt-total">
+
+        <span>
+          應收款
+        </span>
+
+        <strong>
+          ${formatPlainMoney(
+            order.receivable
+          )}
+        </strong>
+
+      </div>
+
+      <div class="receipt-rule strong"></div>
+
+      <div class="receipt-footer">
+
+        <strong>
+          感謝您的訂購！
+        </strong>
+
+        <div>
+          祝您生意興隆！
+        </div>
+
+      </div>
+
+    </div>
+  `;
+}
+
+/* =========================================================
+   PRINTABLE DOCUMENT
+========================================================= */
+
+function buildPrintableDocument(
+  order,
+  items,
+  width
+) {
+  const receipt =
+    buildReceiptMarkup(
+      order,
+      items,
+      width
+    );
+
+  return `
+<!doctype html>
+
+<html lang="zh-Hant-TW">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="
+      width=device-width,
+      initial-scale=1
+    "
+  >
+
+  <title>
+    ${escapeHtml(
+      order.order_number
+    )}
+  </title>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+
+      background: #ffffff;
+
+      color: #000000;
+    }
+
+    body {
+      width: ${width}mm;
+
+      font-family:
+        "Microsoft JhengHei",
+        "Noto Sans TC",
+        Arial,
+        sans-serif;
+
+      -webkit-print-color-adjust:
+        exact;
+
+      print-color-adjust:
+        exact;
+    }
+
+    .thermal-receipt {
+      margin: 0;
+
+      background: #ffffff;
+
+      color: #000000;
+    }
+
+    .receipt-58 {
+      width: 58mm;
+
+      padding:
+        2.5mm
+        2mm;
+
+      font-size: 10.5px;
+    }
+
+    .receipt-80 {
+      width: 80mm;
+
+      padding:
+        3mm
+        3mm;
+
+      font-size: 12px;
+    }
+
+    .receipt-brand {
+      text-align: center;
+
+      font-size: 30px;
+
+      line-height: 1.1;
+
+      font-weight: 900;
+    }
+
+    .receipt-58
+    .receipt-brand {
+      font-size: 24px;
+    }
+
+    .receipt-slogan {
+      margin-top: 3px;
+
+      text-align: center;
+
+      font-size: .92em;
+
+      font-weight: 700;
+    }
+
+    .receipt-title {
+      margin-top: 7px;
+
+      text-align: center;
+
+      font-size: 1.35em;
+
+      font-weight: 900;
+    }
+
+    .receipt-rule {
+      margin:
+        7px
+        0;
+
+      border-top:
+        1px
+        dashed
+        #000;
+    }
+
+    .receipt-rule.strong {
+      border-top:
+        2px
+        solid
+        #000;
+    }
+
+    .receipt-info {
+      display: grid;
+
+      gap: 3px;
+    }
+
+    .receipt-info > div {
+      display: grid;
+
+      grid-template-columns:
+        38px
+        1fr;
+
+      gap: 5px;
+    }
+
+    .receipt-info span {
+      white-space: nowrap;
+    }
+
+    .receipt-info strong {
+      overflow-wrap: anywhere;
+    }
+
+    .receipt-table {
+      width: 100%;
+
+      border-collapse:
+        collapse;
+
+      table-layout:
+        fixed;
+    }
+
+    .receipt-table th,
+    .receipt-table td {
+      padding:
+        3px
+        1px;
+
+      text-align: right;
+
+      vertical-align:
+        top;
+
+      word-break:
+        break-word;
+    }
+
+    .receipt-table th {
+      border-bottom:
+        1px
+        solid
+        #000;
+
+      font-weight: 900;
+    }
+
+    .receipt-table
+    .receipt-product {
+      width: 42%;
+
+      text-align: left;
+    }
+
+    .receipt-58
+    .receipt-table
+    .receipt-product {
+      width: 39%;
+    }
+
+    .receipt-summary {
+      display: grid;
+
+      gap: 3px;
+    }
+
+    .receipt-summary > div {
+      display: flex;
+
+      justify-content:
+        space-between;
+
+      gap: 8px;
+    }
+
+    .receipt-note {
+      font-size: 1.08em;
+
+      font-weight: 700;
+
+      line-height: 1.45;
+
+      overflow-wrap:
+        anywhere;
+    }
+
+    .receipt-total {
+      display: flex;
+
+      justify-content:
+        space-between;
+
+      align-items:
+        baseline;
+
+      gap: 8px;
+
+      padding:
+        5px
+        0;
+
+      font-size: 1.35em;
+
+      font-weight: 900;
+    }
+
+    .receipt-total strong {
+      font-size: 1.45em;
+    }
+
+    .receipt-footer {
+      padding-top: 5px;
+
+      text-align: center;
+
+      line-height: 1.55;
+    }
+
+    @page {
+      margin: 0;
+    }
+
+    @media print {
+
+      html,
+      body {
+        width: ${width}mm;
+      }
+
+      .thermal-receipt {
+        box-shadow: none;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  ${receipt}
+
+</body>
+
+</html>
   `;
 }
 
@@ -1766,7 +3391,8 @@ async function renderDeliveries() {
       scheduled_delivery_date,
       delivery_slot,
       scheduled_delivery_time,
-      status
+      status,
+      created_at
     `)
     .eq(
       "scheduled_delivery_date",
@@ -1788,6 +3414,7 @@ async function renderDeliveries() {
     );
 
   if (error) {
+    console.error(error);
 
     content.innerHTML = `
       <div class="message message-error">
@@ -1798,7 +3425,8 @@ async function renderDeliveries() {
     return;
   }
 
-  const orders = data || [];
+  const orders =
+    data || [];
 
   const unassigned =
     orders.filter(
@@ -1858,77 +3486,86 @@ async function renderDeliveries() {
 
     ${
       orders.length
-        ? orders.map(order => `
-            <article class="order-card">
+        ? orders
+            .map(
+              order => `
+                <article class="order-card">
 
-              <div class="order-head">
+                  <div class="order-head">
 
-                <div>
+                    <div>
 
-                  <div class="order-store">
-                    ${escapeHtml(
-                      order.customer_name
-                    )}
-                  </div>
-
-                  <div class="order-number">
-                    ${escapeHtml(
-                      order.order_number
-                    )}
-                  </div>
-
-                </div>
-
-                <div class="order-price">
-                  ${money(
-                    order.receivable
-                  )}
-                </div>
-
-              </div>
-
-              <div class="order-meta">
-
-                <div>
-                  配送：
-                  ${escapeHtml(
-                    staffName(
-                      order.delivery_person_id
-                    )
-                  )}
-                </div>
-
-                <div>
-                  ${
-                    escapeHtml(
-                      deliveryDateLabel(order)
-                    )
-                  }
-                </div>
-
-                ${
-                  order.customer_address
-                    ? `
-                      <div>
-                        地址：
+                      <div class="order-store">
                         ${escapeHtml(
-                          order.customer_address
+                          order.customer_name
                         )}
                       </div>
-                    `
-                    : ""
-                }
 
-                <div>
-                  ${deliveryStatusBadge(
-                    order.delivery_status
-                  )}
-                </div>
+                      <div class="order-number">
+                        ${escapeHtml(
+                          order.order_number
+                        )}
+                      </div>
 
-              </div>
+                    </div>
 
-            </article>
-          `).join("")
+                    <div class="order-price">
+                      ${money(
+                        order.receivable
+                      )}
+                    </div>
+
+                  </div>
+
+                  <div class="order-meta">
+
+                    <div>
+                      配送：
+                      ${escapeHtml(
+                        staffName(
+                          order.delivery_person_id
+                        )
+                      )}
+                    </div>
+
+                    <div>
+                      ${escapeHtml(
+                        deliveryDateLabel(
+                          order
+                        )
+                      )}
+                    </div>
+
+                    ${
+                      order.customer_address
+                        ? `
+                          <div>
+
+                            地址：
+
+                            ${escapeHtml(
+                              order.customer_address
+                            )}
+
+                          </div>
+                        `
+                        : ""
+                    }
+
+                    <div>
+
+                      ${deliveryStatusBadge(
+                        order.delivery_status
+                      )}
+
+                    </div>
+
+                  </div>
+
+                </article>
+              `
+            )
+            .join("")
         : `
           <div class="card empty">
             今天沒有待配送案件。
@@ -1980,6 +3617,27 @@ function renderMyPage() {
     <section class="card">
 
       <div class="card-title">
+        我的出單設定
+      </div>
+
+      <div style="
+        color:var(--muted);
+        line-height:1.7;
+      ">
+
+        預設紙寬：
+
+        <strong>
+          ${selectedReceiptWidth}mm
+        </strong>
+
+      </div>
+
+    </section>
+
+    <section class="card">
+
+      <div class="card-title">
         我的現金
       </div>
 
@@ -1988,14 +3646,18 @@ function renderMyPage() {
         color:var(--muted);
       ">
         現金收款與交回倉庫功能，
-        我們下一階段接上。
+        下一階段接上。
       </p>
 
     </section>
 
     <button
       id="logoutButton"
-      class="btn btn-dark btn-block"
+      class="
+        btn
+        btn-dark
+        btn-block
+      "
       type="button"
     >
       登出系統
@@ -2003,7 +3665,9 @@ function renderMyPage() {
   `;
 
   document
-    .getElementById("logoutButton")
+    .getElementById(
+      "logoutButton"
+    )
     .addEventListener(
       "click",
       logout
@@ -2016,9 +3680,11 @@ function renderMyPage() {
 
 function isManager() {
   return (
-    currentProfile.role === "owner"
+    currentProfile.role
+      === "owner"
     ||
-    currentProfile.role === "admin"
+    currentProfile.role
+      === "admin"
   );
 }
 
@@ -2036,69 +3702,106 @@ function roleLabel(role) {
   }
 }
 
-function deliveryStatusBadge(status) {
+function deliveryStatusBadge(
+  status
+) {
   const labels = {
-    pending: "待分配",
-    assigned: "已指派",
-    accepted: "已接管",
-    delivering: "配送中",
-    completed: "配送完成",
-    partial: "部分完成",
-    failed: "配送失敗"
+    pending:
+      "待分配",
+
+    assigned:
+      "已指派",
+
+    accepted:
+      "已接管",
+
+    delivering:
+      "配送中",
+
+    completed:
+      "配送完成",
+
+    partial:
+      "部分完成",
+
+    failed:
+      "配送失敗"
   };
 
   const className =
     status === "completed"
       ? "status-completed"
       : (
-          status === "delivering"
+          status
+            === "delivering"
           ||
-          status === "accepted"
+          status
+            === "accepted"
         )
-      ? "status-active"
-      : "status-pending";
+        ? "status-active"
+        : "status-pending";
 
   return `
     <span
-      class="status ${className}"
+      class="
+        status
+        ${className}
+      "
     >
       ${labels[status] || status}
     </span>
   `;
 }
 
-function deliveryDateLabel(order) {
+function deliveryDateLabel(
+  order
+) {
   const slotLabels = {
-    morning: "上午",
-    afternoon: "下午",
-    evening: "晚上",
-    specific: "指定時間",
-    anytime: "不限時段"
+    morning:
+      "上午",
+
+    afternoon:
+      "下午",
+
+    evening:
+      "晚上",
+
+    specific:
+      "指定時間",
+
+    anytime:
+      "不限時段"
   };
 
   let result =
     order.scheduled_delivery_date
-    || "";
+    ||
+    "";
 
   result +=
-    ` ${slotLabels[
-      order.delivery_slot
-    ] || ""}`;
+    ` ${
+      slotLabels[
+        order.delivery_slot
+      ]
+      ||
+      ""
+    }`;
 
   if (
     order.delivery_slot
-    === "specific"
+      === "specific"
     &&
     order.scheduled_delivery_time
   ) {
-
     result +=
       ` ${
         String(
           order.scheduled_delivery_time
-        ).slice(0, 5)
+        ).slice(
+          0,
+          5
+        )
       }`;
-
   }
 
   return result.trim();
@@ -2108,38 +3811,100 @@ function taiwanToday() {
   return new Intl.DateTimeFormat(
     "en-CA",
     {
-      timeZone: "Asia/Taipei",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit"
+      timeZone:
+        "Asia/Taipei",
+
+      year:
+        "numeric",
+
+      month:
+        "2-digit",
+
+      day:
+        "2-digit"
     }
-  ).format(new Date());
+  ).format(
+    new Date()
+  );
 }
 
 function formatTodayChinese() {
   return new Intl.DateTimeFormat(
     "zh-TW",
     {
-      timeZone: "Asia/Taipei",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      weekday: "long"
+      timeZone:
+        "Asia/Taipei",
+
+      year:
+        "numeric",
+
+      month:
+        "long",
+
+      day:
+        "numeric",
+
+      weekday:
+        "long"
     }
-  ).format(new Date());
+  ).format(
+    new Date()
+  );
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat(
+    "zh-TW",
+    {
+      timeZone:
+        "Asia/Taipei",
+
+      year:
+        "numeric",
+
+      month:
+        "2-digit",
+
+      day:
+        "2-digit",
+
+      hour:
+        "2-digit",
+
+      minute:
+        "2-digit",
+
+      hour12:
+        false
+    }
+  ).format(
+    new Date(value)
+  );
 }
 
 function getGreeting() {
-  const hour = Number(
-    new Intl.DateTimeFormat(
-      "en-US",
-      {
-        timeZone: "Asia/Taipei",
-        hour: "2-digit",
-        hour12: false
-      }
-    ).format(new Date())
-  );
+  const hour =
+    Number(
+      new Intl.DateTimeFormat(
+        "en-US",
+        {
+          timeZone:
+            "Asia/Taipei",
+
+          hour:
+            "2-digit",
+
+          hour12:
+            false
+        }
+      ).format(
+        new Date()
+      )
+    );
 
   if (hour < 12) {
     return "早安";
@@ -2154,36 +3919,79 @@ function getGreeting() {
 
 function money(value) {
   const number =
-    Number(value || 0);
+    Number(
+      value || 0
+    );
 
   return new Intl.NumberFormat(
     "zh-TW",
     {
-      style: "currency",
-      currency: "TWD",
-      maximumFractionDigits: 0
+      style:
+        "currency",
+
+      currency:
+        "TWD",
+
+      maximumFractionDigits:
+        0
     }
-  ).format(number);
+  ).format(
+    number
+  );
+}
+
+function formatPlainMoney(
+  value
+) {
+  return new Intl.NumberFormat(
+    "zh-TW",
+    {
+      maximumFractionDigits:
+        2
+    }
+  ).format(
+    Number(
+      value || 0
+    )
+  );
 }
 
 function formatNumber(value) {
   return new Intl.NumberFormat(
     "zh-TW",
     {
-      maximumFractionDigits: 2
+      maximumFractionDigits:
+        2
     }
-  ).format(value);
+  ).format(
+    value
+  );
 }
 
 function escapeHtml(value) {
   return String(
     value ?? ""
   )
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 }
 
 /* =========================================================
@@ -2193,11 +4001,17 @@ function escapeHtml(value) {
 supabase.auth.onAuthStateChange(
   event => {
 
-    if (event === "SIGNED_OUT") {
+    if (
+      event === "SIGNED_OUT"
+    ) {
       showLogin();
     }
 
   }
 );
+
+/* =========================================================
+   START
+========================================================= */
 
 init();
