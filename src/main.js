@@ -16,6 +16,7 @@ let itemCounter = 0;
 
 let selectedOrderId = null;
 let selectedReceiptWidth = 80;
+let selectedOrderDate = taiwanToday();
 
 /* =========================================================
    INIT
