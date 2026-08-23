@@ -43,38 +43,20 @@ function showLogin() {
   currentUser = null;
   currentProfile = null;
   staff = [];
-
   selectedOrderId = null;
 
   app.innerHTML = `
     <main class="login-page">
-
       <section class="login-card">
-
         <div class="login-brand">
-
-          <div class="brand-badge">
-            神隊友 × 好貨倉
-          </div>
-
-          <h1>
-            銷貨配送管理系統
-          </h1>
-
-          <p>
-            員工／管理員登入
-          </p>
-
+          <div class="brand-badge">神隊友 × 好貨倉</div>
+          <h1>銷貨配送管理系統</h1>
+          <p>員工／管理員登入</p>
         </div>
 
         <form id="loginForm">
-
           <label class="field">
-
-            <span class="field-label">
-              Email
-            </span>
-
+            <span class="field-label">Email</span>
             <input
               id="email"
               type="email"
@@ -82,17 +64,12 @@ function showLogin() {
               autocomplete="username"
               placeholder="請輸入 Email"
             >
-
           </label>
 
           <br>
 
           <label class="field">
-
-            <span class="field-label">
-              密碼
-            </span>
-
+            <span class="field-label">密碼</span>
             <input
               id="password"
               type="password"
@@ -100,7 +77,6 @@ function showLogin() {
               autocomplete="current-password"
               placeholder="請輸入密碼"
             >
-
           </label>
 
           <br>
@@ -114,11 +90,8 @@ function showLogin() {
           >
             登入系統
           </button>
-
         </form>
-
       </section>
-
     </main>
   `;
 
@@ -130,25 +103,19 @@ function showLogin() {
 async function login(event) {
   event.preventDefault();
 
-  const email =
-    document
-      .getElementById("email")
-      .value
-      .trim();
+  const email = document
+    .getElementById("email")
+    .value
+    .trim();
 
-  const password =
-    document
-      .getElementById("password")
-      .value;
+  const password = document
+    .getElementById("password")
+    .value;
 
-  const button =
-    document.getElementById("loginButton");
-
-  const message =
-    document.getElementById("loginMessage");
+  const button = document.getElementById("loginButton");
+  const message = document.getElementById("loginMessage");
 
   message.innerHTML = "";
-
   button.disabled = true;
   button.textContent = "登入中...";
 
@@ -169,7 +136,6 @@ async function login(event) {
 
     button.disabled = false;
     button.textContent = "登入系統";
-
     return;
   }
 
@@ -195,18 +161,13 @@ async function startApp(user) {
   if (error || !profile) {
     app.innerHTML = `
       <main class="login-page">
-
         <section class="login-card">
-
           <div class="message message-error">
             找不到此帳號的 profiles 資料。
           </div>
-
         </section>
-
       </main>
     `;
-
     return;
   }
 
@@ -215,18 +176,13 @@ async function startApp(user) {
 
     app.innerHTML = `
       <main class="login-page">
-
         <section class="login-card">
-
           <div class="message message-error">
             此帳號已停用。
           </div>
-
         </section>
-
       </main>
     `;
-
     return;
   }
 
@@ -238,17 +194,17 @@ async function startApp(user) {
       ? 58
       : 80;
 
+  selectedOrderDate = taiwanToday();
+  selectedOrderId = null;
+
   await loadStaff();
 
   currentPage = "workbench";
-  selectedOrderId = null;
-
   await renderApp();
 }
 
 async function logout() {
   await supabase.auth.signOut();
-
   showLogin();
 }
 
@@ -272,9 +228,7 @@ async function loadStaff() {
 
   if (error) {
     console.error(error);
-
     staff = [];
-
     return;
   }
 
@@ -316,7 +270,6 @@ async function renderApp() {
         <div class="topbar-inner">
 
           <div>
-
             <div class="topbar-brand">
               神隊友 × 好貨倉
             </div>
@@ -327,7 +280,6 @@ async function renderApp() {
             >
               工作台
             </div>
-
           </div>
 
           <div class="user-chip">
@@ -375,7 +327,7 @@ function renderBottomNav() {
       ${navButton(
         "today-orders",
         "▤",
-        "今日訂單"
+        "訂單列表"
       )}
 
       ${navButton(
@@ -457,8 +409,8 @@ async function renderCurrentPage() {
       break;
 
     case "today-orders":
-      setPageTitle("今日訂單");
-      await renderTodayOrders();
+      setPageTitle("訂單列表");
+      await renderOrdersList();
       break;
 
     case "order-detail":
@@ -510,7 +462,8 @@ async function renderWorkbench() {
     </div>
   `;
 
-  const today = taiwanToday();
+  const today =
+    taiwanToday();
 
   const {
     data,
@@ -526,8 +479,14 @@ async function renderWorkbench() {
       delivery_status,
       status
     `)
-    .eq("business_date", today)
-    .eq("status", "active");
+    .eq(
+      "business_date",
+      today
+    )
+    .eq(
+      "status",
+      "active"
+    );
 
   if (error) {
     console.error(error);
@@ -548,7 +507,7 @@ async function renderWorkbench() {
     orders.filter(
       order =>
         order.order_taker_id
-        === currentUser.id
+          === currentUser.id
     ).length;
 
   const myDeliveries =
@@ -1696,22 +1655,24 @@ async function submitOrder(event) {
   setTimeout(
     async () => {
 
+      selectedOrderDate =
+        payload.p_business_date;
+
       currentPage =
         "today-orders";
 
       await renderApp();
 
     },
-    1000
+    900
   );
 }
 
 /* =========================================================
-   TODAY ORDERS
+   ORDER LIST
 ========================================================= */
 
-
-async function renderTodayOrders() {
+async function renderOrdersList() {
   const content =
     document.getElementById(
       "pageContent"
@@ -1772,14 +1733,23 @@ async function renderTodayOrders() {
     return;
   }
 
-  const orders =
-    (data || []).filter(
+  const allOrders =
+    data || [];
+
+  const activeOrders =
+    allOrders.filter(
       order =>
         order.status !== "voided"
     );
 
+  const voidedOrders =
+    allOrders.filter(
+      order =>
+        order.status === "voided"
+    );
+
   const totalAmount =
-    orders.reduce(
+    activeOrders.reduce(
       (sum, order) =>
         sum +
         Number(
@@ -1788,8 +1758,8 @@ async function renderTodayOrders() {
       0
     );
 
-  const isToday =
-    selectedOrderDate === taiwanToday();
+  const today =
+    taiwanToday();
 
   content.innerHTML = `
     <div class="page-title">
@@ -1799,25 +1769,22 @@ async function renderTodayOrders() {
       </h1>
 
       <p>
-        ${selectedOrderDate}
-        ・
-        共 ${orders.length} 張
+        ${formatOrderDateChinese(
+          selectedOrderDate
+        )}
+        ・ 共 ${activeOrders.length} 張
       </p>
 
     </div>
 
-
     <section
-      class="card"
-      style="
-        padding:16px;
-      "
+      class="card order-date-card"
     >
 
       <label class="field">
 
         <span class="field-label">
-          查看哪一天的訂單
+          查看日期
         </span>
 
         <input
@@ -1828,8 +1795,8 @@ async function renderTodayOrders() {
 
       </label>
 
-
       <div
+        class="order-date-buttons"
         style="
           display:grid;
           grid-template-columns:1fr 1fr 1fr;
@@ -1846,14 +1813,13 @@ async function renderTodayOrders() {
           ← 前一天
         </button>
 
-
         <button
           id="todayOrderDate"
           type="button"
           class="
             btn
             ${
-              isToday
+              selectedOrderDate === today
                 ? "btn-primary"
                 : "btn-secondary"
             }
@@ -1861,7 +1827,6 @@ async function renderTodayOrders() {
         >
           今天
         </button>
-
 
         <button
           id="nextOrderDate"
@@ -1875,7 +1840,6 @@ async function renderTodayOrders() {
 
     </section>
 
-
     ${
       isManager()
         ? `
@@ -1884,15 +1848,14 @@ async function renderTodayOrders() {
             <div class="stat-card">
 
               <div class="stat-label">
-                當日訂單
+                當日有效訂單
               </div>
 
               <div class="stat-number">
-                ${orders.length}
+                ${activeOrders.length}
               </div>
 
             </div>
-
 
             <div class="stat-card">
 
@@ -1913,10 +1876,9 @@ async function renderTodayOrders() {
         : ""
     }
 
-
     ${
-      orders.length
-        ? orders
+      activeOrders.length
+        ? activeOrders
             .map(
               renderOrderCard
             )
@@ -1925,7 +1887,9 @@ async function renderTodayOrders() {
           <div class="card empty">
 
             <strong>
-              ${selectedOrderDate}
+              ${formatOrderDateChinese(
+                selectedOrderDate
+              )}
             </strong>
 
             <br><br>
@@ -1935,154 +1899,137 @@ async function renderTodayOrders() {
           </div>
         `
     }
+
+    ${
+      isManager()
+      &&
+      voidedOrders.length
+        ? `
+          <div style="margin-top:28px;">
+
+            <div class="section-title">
+              <h2>
+                已作廢訂單
+              </h2>
+            </div>
+
+            ${
+              voidedOrders
+                .map(
+                  renderVoidedOrderCard
+                )
+                .join("")
+            }
+
+          </div>
+        `
+        : ""
+    }
   `;
 
+  bindOrderDateControls();
 
-  /* ===============================
-     直接選日期
-  =============================== */
-
-  document
-    .getElementById(
-      "orderDatePicker"
-    )
-    .addEventListener(
-      "change",
-      async event => {
-
-        if (!event.target.value) {
-          return;
-        }
-
-        selectedOrderDate =
-          event.target.value;
-
-        await renderTodayOrders();
-
-      }
-    );
-
-
-  /* ===============================
-     前一天
-  =============================== */
-
-  document
-    .getElementById(
-      "previousOrderDate"
-    )
-    .addEventListener(
-      "click",
-      async () => {
-
-        selectedOrderDate =
-          changeOrderDate(
-            selectedOrderDate,
-            -1
-          );
-
-        await renderTodayOrders();
-
-      }
-    );
-
-
-  /* ===============================
-     今天
-  =============================== */
-
-  document
-    .getElementById(
-      "todayOrderDate"
-    )
-    .addEventListener(
-      "click",
-      async () => {
-
-        selectedOrderDate =
-          taiwanToday();
-
-        await renderTodayOrders();
-
-      }
-    );
-
-
-  /* ===============================
-     後一天
-  =============================== */
-
-  document
-    .getElementById(
-      "nextOrderDate"
-    )
-    .addEventListener(
-      "click",
-      async () => {
-
-        selectedOrderDate =
-          changeOrderDate(
-            selectedOrderDate,
-            1
-          );
-
-        await renderTodayOrders();
-
-      }
-    );
-
-
-  /* ===============================
-     查看訂單 / 出單按鈕
-  =============================== */
-
-  bindTodayOrderButtons();
+  bindOrderListButtons();
 }
 
-
-/* =========================================================
-   CHANGE ORDER DATE
-========================================================= */
-
-function changeOrderDate(
-  dateString,
-  days
-) {
-  const [
-    year,
-    month,
-    day
-  ] =
-    dateString
-      .split("-")
-      .map(Number);
-
-  const date =
-    new Date(
-      Date.UTC(
-        year,
-        month - 1,
-        day
-      )
+function bindOrderDateControls() {
+  const picker =
+    document.getElementById(
+      "orderDatePicker"
     );
 
-  date.setUTCDate(
-    date.getUTCDate() + days
+  const previous =
+    document.getElementById(
+      "previousOrderDate"
+    );
+
+  const today =
+    document.getElementById(
+      "todayOrderDate"
+    );
+
+  const next =
+    document.getElementById(
+      "nextOrderDate"
+    );
+
+  picker?.addEventListener(
+    "change",
+    async event => {
+
+      if (
+        !event.target.value
+      ) {
+        return;
+      }
+
+      selectedOrderDate =
+        event.target.value;
+
+      await renderOrdersList();
+
+    }
   );
 
-  return date
-    .toISOString()
-    .slice(0, 10);
+  previous?.addEventListener(
+    "click",
+    async () => {
+
+      selectedOrderDate =
+        addDaysToDate(
+          selectedOrderDate,
+          -1
+        );
+
+      await renderOrdersList();
+
+    }
+  );
+
+  today?.addEventListener(
+    "click",
+    async () => {
+
+      selectedOrderDate =
+        taiwanToday();
+
+      await renderOrdersList();
+
+    }
+  );
+
+  next?.addEventListener(
+    "click",
+    async () => {
+
+      selectedOrderDate =
+        addDaysToDate(
+          selectedOrderDate,
+          1
+        );
+
+      await renderOrdersList();
+
+    }
+  );
 }
+
+function renderOrderCard(order) {
   const printStatus =
     order.first_issued_at
       ? `
-        <span class="status status-completed">
+        <span class="
+          status
+          status-completed
+        ">
           已出單
         </span>
       `
       : `
-        <span class="status status-pending">
+        <span class="
+          status
+          status-pending
+        ">
           未出單
         </span>
       `;
@@ -2128,8 +2075,7 @@ function changeOrderDate(
         <div>
           品牌：
           ${
-            order.brand
-              === "teammate"
+            order.brand === "teammate"
               ? "神隊友"
               : "好貨倉"
           }
@@ -2183,7 +2129,15 @@ function changeOrderDate(
 
       </div>
 
-      <div class="order-actions">
+      <div
+        class="order-actions"
+        style="
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:10px;
+          margin-top:15px;
+        "
+      >
 
         <button
           type="button"
@@ -2232,7 +2186,58 @@ function changeOrderDate(
   `;
 }
 
-function bindTodayOrderButtons() {
+function renderVoidedOrderCard(order) {
+  return `
+    <article
+      class="order-card"
+      style="opacity:.6;"
+    >
+
+      <div class="order-head">
+
+        <div>
+
+          <div class="order-store">
+            ${escapeHtml(
+              order.customer_name
+            )}
+          </div>
+
+          <div class="order-number">
+            ${escapeHtml(
+              order.order_number
+            )}
+          </div>
+
+        </div>
+
+        <div class="order-price">
+          ${money(
+            order.receivable
+          )}
+        </div>
+
+      </div>
+
+      <div class="order-meta">
+
+        <span
+          class="status"
+          style="
+            background:#f2f2f2;
+            color:#777;
+          "
+        >
+          已作廢
+        </span>
+
+      </div>
+
+    </article>
+  `;
+}
+
+function bindOrderListButtons() {
   document
     .querySelectorAll(
       ".view-order-button"
@@ -2281,7 +2286,7 @@ function bindTodayOrderButtons() {
 }
 
 /* =========================================================
-   ORDER DETAIL
+   ORDER DETAIL / RECEIPT
 ========================================================= */
 
 async function renderOrderDetail() {
@@ -2400,12 +2405,18 @@ async function renderOrderDetail() {
   const receiptStatus =
     order.first_issued_at
       ? `
-        <span class="status status-completed">
+        <span class="
+          status
+          status-completed
+        ">
           已出單
         </span>
       `
       : `
-        <span class="status status-pending">
+        <span class="
+          status
+          status-pending
+        ">
           未出單
         </span>
       `;
@@ -2430,7 +2441,15 @@ async function renderOrderDetail() {
 
     <section class="card">
 
-      <div class="order-detail-head">
+      <div
+        class="order-detail-head"
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:14px;
+        "
+      >
 
         <div>
           ${receiptStatus}
@@ -2444,45 +2463,38 @@ async function renderOrderDetail() {
 
       </div>
 
-      <div class="detail-grid">
+      <div
+        class="detail-grid"
+        style="
+          margin-top:16px;
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:12px;
+        "
+      >
 
         <div>
-
-          <span>
-            品牌
-          </span>
-
+          <span>品牌</span>
           <strong>
             ${
-              order.brand
-                === "teammate"
+              order.brand === "teammate"
                 ? "神隊友"
                 : "好貨倉"
             }
           </strong>
-
         </div>
 
         <div>
-
-          <span>
-            訂單日期
-          </span>
-
+          <span>訂單日期</span>
           <strong>
             ${escapeHtml(
               order.business_date
             )}
           </strong>
-
         </div>
 
         <div>
-
-          <span>
-            登單人員
-          </span>
-
+          <span>登單人員</span>
           <strong>
             ${escapeHtml(
               staffName(
@@ -2490,15 +2502,10 @@ async function renderOrderDetail() {
               )
             )}
           </strong>
-
         </div>
 
         <div>
-
-          <span>
-            接單人員
-          </span>
-
+          <span>接單人員</span>
           <strong>
             ${escapeHtml(
               staffName(
@@ -2506,15 +2513,10 @@ async function renderOrderDetail() {
               )
             )}
           </strong>
-
         </div>
 
         <div>
-
-          <span>
-            配送人員
-          </span>
-
+          <span>配送人員</span>
           <strong>
             ${escapeHtml(
               staffName(
@@ -2522,15 +2524,10 @@ async function renderOrderDetail() {
               )
             )}
           </strong>
-
         </div>
 
         <div>
-
-          <span>
-            配送時間
-          </span>
-
+          <span>配送時間</span>
           <strong>
             ${escapeHtml(
               deliveryDateLabel(
@@ -2538,7 +2535,6 @@ async function renderOrderDetail() {
               )
             )}
           </strong>
-
         </div>
 
       </div>
@@ -2546,9 +2542,20 @@ async function renderOrderDetail() {
       ${
         order.first_issued_at
           ? `
-            <div class="issue-info">
+            <div
+              class="issue-info"
+              style="
+                margin-top:14px;
+                padding:12px;
+                border-radius:11px;
+                background:#eef7f5;
+                font-size:13px;
+                line-height:1.6;
+              "
+            >
 
               已由
+
               <strong>
                 ${escapeHtml(
                   staffName(
@@ -2556,6 +2563,7 @@ async function renderOrderDetail() {
                   )
                 )}
               </strong>
+
               出單
 
               <br>
@@ -2577,15 +2585,22 @@ async function renderOrderDetail() {
         電子銷貨單預覽
       </div>
 
-      <div class="receipt-width-switch">
+      <div
+        class="receipt-width-switch"
+        style="
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:8px;
+          margin-bottom:16px;
+        "
+      >
 
         <button
           type="button"
           class="
             receipt-width-button
             ${
-              selectedReceiptWidth
-                === 58
+              selectedReceiptWidth === 58
                 ? "active"
                 : ""
             }
@@ -2600,8 +2615,7 @@ async function renderOrderDetail() {
           class="
             receipt-width-button
             ${
-              selectedReceiptWidth
-                === 80
+              selectedReceiptWidth === 80
                 ? "active"
                 : ""
             }
@@ -2613,7 +2627,16 @@ async function renderOrderDetail() {
 
       </div>
 
-      <div class="receipt-preview-shell">
+      <div
+        class="receipt-preview-shell"
+        style="
+          overflow-x:auto;
+          margin-bottom:18px;
+          padding:24px 10px;
+          border-radius:14px;
+          background:#dfe4e3;
+        "
+      >
 
         ${buildReceiptMarkup(
           order,
@@ -2638,7 +2661,7 @@ async function renderOrderDetail() {
         btn-block
       "
     >
-      ← 返回今日訂單
+      ← 返回訂單列表
     </button>
   `;
 
@@ -2694,6 +2717,11 @@ async function renderOrderDetail() {
         selectedOrderId =
           null;
 
+        selectedOrderDate =
+          order.business_date
+          ||
+          selectedOrderDate;
+
         currentPage =
           "today-orders";
 
@@ -2714,7 +2742,18 @@ function buildPrintControls(order) {
     !isManager()
   ) {
     return `
-      <div class="print-locked-box">
+      <div
+        class="print-locked-box"
+        style="
+          display:grid;
+          gap:5px;
+          padding:14px;
+          border-radius:11px;
+          background:#f1f3f3;
+          color:#596663;
+          font-size:13px;
+        "
+      >
 
         <strong>
           此訂單已出單
@@ -2786,7 +2825,18 @@ function buildPrintControls(order) {
           </label>
         `
         : `
-          <div class="print-warning">
+          <div
+            class="print-warning"
+            style="
+              margin-bottom:12px;
+              padding:13px;
+              border-radius:11px;
+              background:#fff5df;
+              color:#805400;
+              font-size:13px;
+              line-height:1.55;
+            "
+          >
 
             <strong>
               首次出單請先確認
@@ -2820,6 +2870,10 @@ function buildPrintControls(order) {
         btn-primary
         btn-block
         print-main-button
+      "
+      style="
+        min-height:52px;
+        font-size:16px;
       "
     >
       ${
@@ -2877,11 +2931,6 @@ async function printReceipt(
     return;
   }
 
-  /*
-    必須先同步開新視窗，
-    避免 iPhone / Safari
-    因為 RPC await 而阻擋 popup。
-  */
   const printWindow =
     window.open(
       "",
@@ -3034,29 +3083,82 @@ function buildReceiptMarkup(
         thermal-receipt
         receipt-${width}
       "
+      style="
+        margin:auto;
+        background:#fff;
+        color:#000;
+        font-family:
+          'Microsoft JhengHei',
+          'Noto Sans TC',
+          Arial,
+          sans-serif;
+        width:${width}mm;
+        padding:${width === 58 ? "2.5mm 2mm" : "3mm"};
+        font-size:${width === 58 ? "10.5px" : "12px"};
+        box-shadow:0 5px 22px rgba(0,0,0,.14);
+      "
     >
 
-      <div class="receipt-brand">
+      <div
+        class="receipt-brand"
+        style="
+          text-align:center;
+          font-size:${width === 58 ? "24px" : "30px"};
+          line-height:1.1;
+          font-weight:900;
+        "
+      >
         ${escapeHtml(
           brandName
         )}
       </div>
 
-      <div class="receipt-slogan">
+      <div
+        class="receipt-slogan"
+        style="
+          margin-top:3px;
+          text-align:center;
+          font-size:.92em;
+          font-weight:700;
+        "
+      >
         ${escapeHtml(
           slogan
         )}
       </div>
 
-      <div class="receipt-title">
+      <div
+        class="receipt-title"
+        style="
+          margin-top:7px;
+          text-align:center;
+          font-size:1.35em;
+          font-weight:900;
+        "
+      >
         銷貨單
       </div>
 
-      <div class="receipt-rule"></div>
+      <div
+        style="
+          margin:7px 0;
+          border-top:1px dashed #000;
+        "
+      ></div>
 
-      <div class="receipt-info">
+      <div
+        class="receipt-info"
+        style="
+          display:grid;
+          gap:3px;
+        "
+      >
 
-        <div>
+        <div style="
+          display:grid;
+          grid-template-columns:38px 1fr;
+          gap:5px;
+        ">
 
           <span>
             單號
@@ -3070,7 +3172,11 @@ function buildReceiptMarkup(
 
         </div>
 
-        <div>
+        <div style="
+          display:grid;
+          grid-template-columns:38px 1fr;
+          gap:5px;
+        ">
 
           <span>
             日期
@@ -3084,7 +3190,11 @@ function buildReceiptMarkup(
 
         </div>
 
-        <div>
+        <div style="
+          display:grid;
+          grid-template-columns:38px 1fr;
+          gap:5px;
+        ">
 
           <span>
             店家
@@ -3101,7 +3211,11 @@ function buildReceiptMarkup(
         ${
           order.customer_phone
             ? `
-              <div>
+              <div style="
+                display:grid;
+                grid-template-columns:38px 1fr;
+                gap:5px;
+              ">
 
                 <span>
                   電話
@@ -3121,7 +3235,11 @@ function buildReceiptMarkup(
         ${
           order.customer_address
             ? `
-              <div>
+              <div style="
+                display:grid;
+                grid-template-columns:38px 1fr;
+                gap:5px;
+              ">
 
                 <span>
                   地址
@@ -3140,27 +3258,62 @@ function buildReceiptMarkup(
 
       </div>
 
-      <div class="receipt-rule"></div>
+      <div style="
+        margin:7px 0;
+        border-top:1px dashed #000;
+      "></div>
 
-      <table class="receipt-table">
+      <table
+        class="receipt-table"
+        style="
+          width:100%;
+          border-collapse:collapse;
+          table-layout:fixed;
+        "
+      >
 
         <thead>
 
           <tr>
 
-            <th class="receipt-product">
+            <th
+              style="
+                width:${width === 58 ? "39%" : "42%"};
+                text-align:left;
+                padding:3px 1px;
+                border-bottom:1px solid #000;
+              "
+            >
               品名
             </th>
 
-            <th>
+            <th
+              style="
+                text-align:right;
+                padding:3px 1px;
+                border-bottom:1px solid #000;
+              "
+            >
               數量
             </th>
 
-            <th>
+            <th
+              style="
+                text-align:right;
+                padding:3px 1px;
+                border-bottom:1px solid #000;
+              "
+            >
               單價
             </th>
 
-            <th>
+            <th
+              style="
+                text-align:right;
+                padding:3px 1px;
+                border-bottom:1px solid #000;
+              "
+            >
               金額
             </th>
 
@@ -3175,13 +3328,22 @@ function buildReceiptMarkup(
               item => `
                 <tr>
 
-                  <td class="receipt-product">
+                  <td style="
+                    text-align:left;
+                    vertical-align:top;
+                    padding:3px 1px;
+                    word-break:break-word;
+                  ">
                     ${escapeHtml(
                       item.item_name
                     )}
                   </td>
 
-                  <td>
+                  <td style="
+                    text-align:right;
+                    vertical-align:top;
+                    padding:3px 1px;
+                  ">
                     ${formatNumber(
                       Number(
                         item.quantity
@@ -3189,13 +3351,21 @@ function buildReceiptMarkup(
                     )}
                   </td>
 
-                  <td>
+                  <td style="
+                    text-align:right;
+                    vertical-align:top;
+                    padding:3px 1px;
+                  ">
                     ${formatPlainMoney(
                       item.unit_price
                     )}
                   </td>
 
-                  <td>
+                  <td style="
+                    text-align:right;
+                    vertical-align:top;
+                    padding:3px 1px;
+                  ">
                     ${formatPlainMoney(
                       item.amount
                     )}
@@ -3210,11 +3380,21 @@ function buildReceiptMarkup(
 
       </table>
 
-      <div class="receipt-rule"></div>
+      <div style="
+        margin:7px 0;
+        border-top:1px dashed #000;
+      "></div>
 
-      <div class="receipt-summary">
+      <div style="
+        display:grid;
+        gap:3px;
+      ">
 
-        <div>
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          gap:8px;
+        ">
 
           <span>
             品項數
@@ -3226,7 +3406,11 @@ function buildReceiptMarkup(
 
         </div>
 
-        <div>
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          gap:8px;
+        ">
 
           <span>
             數量
@@ -3240,7 +3424,11 @@ function buildReceiptMarkup(
 
         </div>
 
-        <div>
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          gap:8px;
+        ">
 
           <span>
             總計
@@ -3259,9 +3447,18 @@ function buildReceiptMarkup(
       ${
         order.receipt_note
           ? `
-            <div class="receipt-rule"></div>
+            <div style="
+              margin:7px 0;
+              border-top:1px dashed #000;
+            "></div>
 
-            <div class="receipt-note">
+            <div style="
+              font-size:1.08em;
+              font-weight:700;
+              line-height:1.45;
+              overflow-wrap:anywhere;
+              white-space:pre-wrap;
+            ">
 
               <strong>
                 備註：
@@ -3276,15 +3473,28 @@ function buildReceiptMarkup(
           : ""
       }
 
-      <div class="receipt-rule strong"></div>
+      <div style="
+        margin:7px 0;
+        border-top:2px solid #000;
+      "></div>
 
-      <div class="receipt-total">
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:baseline;
+        gap:8px;
+        padding:5px 0;
+        font-size:1.35em;
+        font-weight:900;
+      ">
 
         <span>
           應收款
         </span>
 
-        <strong>
+        <strong style="
+          font-size:1.45em;
+        ">
           ${formatPlainMoney(
             order.receivable
           )}
@@ -3292,9 +3502,16 @@ function buildReceiptMarkup(
 
       </div>
 
-      <div class="receipt-rule strong"></div>
+      <div style="
+        margin:7px 0;
+        border-top:2px solid #000;
+      "></div>
 
-      <div class="receipt-footer">
+      <div style="
+        padding-top:5px;
+        text-align:center;
+        line-height:1.55;
+      ">
 
         <strong>
           感謝您的訂購！
@@ -3359,9 +3576,7 @@ function buildPrintableDocument(
     body {
       margin: 0;
       padding: 0;
-
       background: #ffffff;
-
       color: #000000;
     }
 
@@ -3381,216 +3596,6 @@ function buildPrintableDocument(
         exact;
     }
 
-    .thermal-receipt {
-      margin: 0;
-
-      background: #ffffff;
-
-      color: #000000;
-    }
-
-    .receipt-58 {
-      width: 58mm;
-
-      padding:
-        2.5mm
-        2mm;
-
-      font-size: 10.5px;
-    }
-
-    .receipt-80 {
-      width: 80mm;
-
-      padding:
-        3mm
-        3mm;
-
-      font-size: 12px;
-    }
-
-    .receipt-brand {
-      text-align: center;
-
-      font-size: 30px;
-
-      line-height: 1.1;
-
-      font-weight: 900;
-    }
-
-    .receipt-58
-    .receipt-brand {
-      font-size: 24px;
-    }
-
-    .receipt-slogan {
-      margin-top: 3px;
-
-      text-align: center;
-
-      font-size: .92em;
-
-      font-weight: 700;
-    }
-
-    .receipt-title {
-      margin-top: 7px;
-
-      text-align: center;
-
-      font-size: 1.35em;
-
-      font-weight: 900;
-    }
-
-    .receipt-rule {
-      margin:
-        7px
-        0;
-
-      border-top:
-        1px
-        dashed
-        #000;
-    }
-
-    .receipt-rule.strong {
-      border-top:
-        2px
-        solid
-        #000;
-    }
-
-    .receipt-info {
-      display: grid;
-
-      gap: 3px;
-    }
-
-    .receipt-info > div {
-      display: grid;
-
-      grid-template-columns:
-        38px
-        1fr;
-
-      gap: 5px;
-    }
-
-    .receipt-info span {
-      white-space: nowrap;
-    }
-
-    .receipt-info strong {
-      overflow-wrap: anywhere;
-    }
-
-    .receipt-table {
-      width: 100%;
-
-      border-collapse:
-        collapse;
-
-      table-layout:
-        fixed;
-    }
-
-    .receipt-table th,
-    .receipt-table td {
-      padding:
-        3px
-        1px;
-
-      text-align: right;
-
-      vertical-align:
-        top;
-
-      word-break:
-        break-word;
-    }
-
-    .receipt-table th {
-      border-bottom:
-        1px
-        solid
-        #000;
-
-      font-weight: 900;
-    }
-
-    .receipt-table
-    .receipt-product {
-      width: 42%;
-
-      text-align: left;
-    }
-
-    .receipt-58
-    .receipt-table
-    .receipt-product {
-      width: 39%;
-    }
-
-    .receipt-summary {
-      display: grid;
-
-      gap: 3px;
-    }
-
-    .receipt-summary > div {
-      display: flex;
-
-      justify-content:
-        space-between;
-
-      gap: 8px;
-    }
-
-    .receipt-note {
-      font-size: 1.08em;
-
-      font-weight: 700;
-
-      line-height: 1.45;
-
-      overflow-wrap:
-        anywhere;
-    }
-
-    .receipt-total {
-      display: flex;
-
-      justify-content:
-        space-between;
-
-      align-items:
-        baseline;
-
-      gap: 8px;
-
-      padding:
-        5px
-        0;
-
-      font-size: 1.35em;
-
-      font-weight: 900;
-    }
-
-    .receipt-total strong {
-      font-size: 1.45em;
-    }
-
-    .receipt-footer {
-      padding-top: 5px;
-
-      text-align: center;
-
-      line-height: 1.55;
-    }
-
     @page {
       margin: 0;
     }
@@ -3600,10 +3605,6 @@ function buildPrintableDocument(
       html,
       body {
         width: ${width}mm;
-      }
-
-      .thermal-receipt {
-        box-shadow: none;
       }
 
     }
@@ -3704,7 +3705,7 @@ async function renderDeliveries() {
     orders.filter(
       order =>
         order.delivery_status
-        === "delivering"
+          === "delivering"
     ).length;
 
   content.innerHTML = `
@@ -4115,6 +4116,81 @@ function formatTodayChinese() {
     }
   ).format(
     new Date()
+  );
+}
+
+function addDaysToDate(
+  dateString,
+  days
+) {
+  const [
+    year,
+    month,
+    day
+  ] =
+    dateString
+      .split("-")
+      .map(Number);
+
+  const date =
+    new Date(
+      Date.UTC(
+        year,
+        month - 1,
+        day
+      )
+    );
+
+  date.setUTCDate(
+    date.getUTCDate() + days
+  );
+
+  return date
+    .toISOString()
+    .slice(0, 10);
+}
+
+function formatOrderDateChinese(
+  dateString
+) {
+  const [
+    year,
+    month,
+    day
+  ] =
+    dateString
+      .split("-")
+      .map(Number);
+
+  const date =
+    new Date(
+      Date.UTC(
+        year,
+        month - 1,
+        day
+      )
+    );
+
+  return new Intl.DateTimeFormat(
+    "zh-TW",
+    {
+      timeZone:
+        "UTC",
+
+      year:
+        "numeric",
+
+      month:
+        "long",
+
+      day:
+        "numeric",
+
+      weekday:
+        "short"
+    }
+  ).format(
+    date
   );
 }
 
