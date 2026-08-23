@@ -1710,6 +1710,7 @@ async function submitOrder(event) {
    TODAY ORDERS
 ========================================================= */
 
+
 async function renderTodayOrders() {
   const content =
     document.getElementById(
@@ -1718,7 +1719,7 @@ async function renderTodayOrders() {
 
   content.innerHTML = `
     <div class="empty">
-      讀取今日訂單...
+      讀取訂單...
     </div>
   `;
 
@@ -1731,6 +1732,7 @@ async function renderTodayOrders() {
       id,
       order_number,
       brand,
+      business_date,
       customer_name,
       receivable,
       entered_by,
@@ -1748,7 +1750,7 @@ async function renderTodayOrders() {
     `)
     .eq(
       "business_date",
-      taiwanToday()
+      selectedOrderDate
     )
     .order(
       "created_at",
@@ -1762,7 +1764,8 @@ async function renderTodayOrders() {
 
     content.innerHTML = `
       <div class="message message-error">
-        今日訂單讀取失敗。
+        訂單讀取失敗：
+        ${escapeHtml(error.message)}
       </div>
     `;
 
@@ -1770,25 +1773,146 @@ async function renderTodayOrders() {
   }
 
   const orders =
-    (data || [])
-      .filter(
-        order =>
-          order.status
-          !== "voided"
-      );
+    (data || []).filter(
+      order =>
+        order.status !== "voided"
+    );
+
+  const totalAmount =
+    orders.reduce(
+      (sum, order) =>
+        sum +
+        Number(
+          order.receivable || 0
+        ),
+      0
+    );
+
+  const isToday =
+    selectedOrderDate === taiwanToday();
 
   content.innerHTML = `
     <div class="page-title">
 
       <h1>
-        今日訂單
+        訂單列表
       </h1>
 
       <p>
+        ${selectedOrderDate}
+        ・
         共 ${orders.length} 張
       </p>
 
     </div>
+
+
+    <section
+      class="card"
+      style="
+        padding:16px;
+      "
+    >
+
+      <label class="field">
+
+        <span class="field-label">
+          查看哪一天的訂單
+        </span>
+
+        <input
+          id="orderDatePicker"
+          type="date"
+          value="${selectedOrderDate}"
+        >
+
+      </label>
+
+
+      <div
+        style="
+          display:grid;
+          grid-template-columns:1fr 1fr 1fr;
+          gap:8px;
+          margin-top:12px;
+        "
+      >
+
+        <button
+          id="previousOrderDate"
+          type="button"
+          class="btn btn-secondary"
+        >
+          ← 前一天
+        </button>
+
+
+        <button
+          id="todayOrderDate"
+          type="button"
+          class="
+            btn
+            ${
+              isToday
+                ? "btn-primary"
+                : "btn-secondary"
+            }
+          "
+        >
+          今天
+        </button>
+
+
+        <button
+          id="nextOrderDate"
+          type="button"
+          class="btn btn-secondary"
+        >
+          後一天 →
+        </button>
+
+      </div>
+
+    </section>
+
+
+    ${
+      isManager()
+        ? `
+          <div class="stats-grid">
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                當日訂單
+              </div>
+
+              <div class="stat-number">
+                ${orders.length}
+              </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                當日訂單金額
+              </div>
+
+              <div class="stat-number money">
+                ${money(totalAmount)}
+              </div>
+
+            </div>
+
+          </div>
+
+          <br>
+        `
+        : ""
+    }
+
 
     ${
       orders.length
@@ -1799,16 +1923,157 @@ async function renderTodayOrders() {
             .join("")
         : `
           <div class="card empty">
-            今天還沒有訂單。
+
+            <strong>
+              ${selectedOrderDate}
+            </strong>
+
+            <br><br>
+
+            這一天沒有訂單。
+
           </div>
         `
     }
   `;
 
+
+  /* ===============================
+     直接選日期
+  =============================== */
+
+  document
+    .getElementById(
+      "orderDatePicker"
+    )
+    .addEventListener(
+      "change",
+      async event => {
+
+        if (!event.target.value) {
+          return;
+        }
+
+        selectedOrderDate =
+          event.target.value;
+
+        await renderTodayOrders();
+
+      }
+    );
+
+
+  /* ===============================
+     前一天
+  =============================== */
+
+  document
+    .getElementById(
+      "previousOrderDate"
+    )
+    .addEventListener(
+      "click",
+      async () => {
+
+        selectedOrderDate =
+          changeOrderDate(
+            selectedOrderDate,
+            -1
+          );
+
+        await renderTodayOrders();
+
+      }
+    );
+
+
+  /* ===============================
+     今天
+  =============================== */
+
+  document
+    .getElementById(
+      "todayOrderDate"
+    )
+    .addEventListener(
+      "click",
+      async () => {
+
+        selectedOrderDate =
+          taiwanToday();
+
+        await renderTodayOrders();
+
+      }
+    );
+
+
+  /* ===============================
+     後一天
+  =============================== */
+
+  document
+    .getElementById(
+      "nextOrderDate"
+    )
+    .addEventListener(
+      "click",
+      async () => {
+
+        selectedOrderDate =
+          changeOrderDate(
+            selectedOrderDate,
+            1
+          );
+
+        await renderTodayOrders();
+
+      }
+    );
+
+
+  /* ===============================
+     查看訂單 / 出單按鈕
+  =============================== */
+
   bindTodayOrderButtons();
 }
 
-function renderOrderCard(order) {
+
+/* =========================================================
+   CHANGE ORDER DATE
+========================================================= */
+
+function changeOrderDate(
+  dateString,
+  days
+) {
+  const [
+    year,
+    month,
+    day
+  ] =
+    dateString
+      .split("-")
+      .map(Number);
+
+  const date =
+    new Date(
+      Date.UTC(
+        year,
+        month - 1,
+        day
+      )
+    );
+
+  date.setUTCDate(
+    date.getUTCDate() + days
+  );
+
+  return date
+    .toISOString()
+    .slice(0, 10);
+}
   const printStatus =
     order.first_issued_at
       ? `
